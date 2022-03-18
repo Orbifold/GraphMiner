@@ -1,6 +1,6 @@
 {
   "name": "@graphminer/entities",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Object Graph Mapper",
   "author": "Swa <swa@orbifold.net>",
   "homepage": "https://graphminer.io",
@@ -21,12 +21,12 @@
     "test": "jest  __tests__ "
   },
   "dependencies": {
-    "@graphminer/store": "^0.2.3",
-    "@graphminer/utils": "^0.2.3",
+    "@graphminer/store": "^0.2.4",
+    "@graphminer/utils": "^0.2.4",
     "@types/winston": "^2.4.4",
     "js-yaml": "^4.1.0",
     "npmlog": "^6.0.0",
     "winston": "^3.3.3"
   },
-  "gitHead": "d0b2b338e39ab7e544305e481c18b36866e5abe8"
+  "gitHead": "4b1faff2a7bd2b839f870c304a98ae76e5fdde12"
 }

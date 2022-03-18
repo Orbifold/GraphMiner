@@ -1,6 +1,6 @@
 {
   "name": "@graphminer/store",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Generic storage.",
   "author": "Swa <swa@orbifold.net>",
   "homepage": "https://graphminer.io",
@@ -21,7 +21,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@graphminer/utils": "^0.2.3",
+    "@graphminer/utils": "^0.2.4",
     "lokijs": "^1.5.12",
     "winston": "^3.3.3"
   },
@@ -31,5 +31,5 @@
     "@types/lokijs": "^1.5.7",
     "prettier": "^2.5.1"
   },
-  "gitHead": "d0b2b338e39ab7e544305e481c18b36866e5abe8"
+  "gitHead": "4b1faff2a7bd2b839f870c304a98ae76e5fdde12"
 }
