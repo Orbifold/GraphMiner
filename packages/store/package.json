@@ -30,5 +30,6 @@
     "@types/lodash": "^4.14.178",
     "@types/lokijs": "^1.5.7",
     "prettier": "^2.5.1"
-  }
+  },
+  "gitHead": "d0b2b338e39ab7e544305e481c18b36866e5abe8"
 }

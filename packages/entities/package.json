@@ -27,5 +27,6 @@
     "js-yaml": "^4.1.0",
     "npmlog": "^6.0.0",
     "winston": "^3.3.3"
-  }
+  },
+  "gitHead": "d0b2b338e39ab7e544305e481c18b36866e5abe8"
 }
