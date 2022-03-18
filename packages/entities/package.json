@@ -1,6 +1,6 @@
 {
   "name": "@graphminer/entities",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": false,
   "description": "Object Graph Mapper",
   "author": "Swa <swa@orbifold.net>",
@@ -22,8 +22,8 @@
     "test": "jest  __tests__ "
   },
   "dependencies": {
-    "@graphminer/store": "^0.2.4",
-    "@graphminer/utils": "^0.2.4",
+    "@graphminer/store": "^0.2.5",
+    "@graphminer/utils": "^0.2.5",
     "@types/winston": "^2.4.4",
     "js-yaml": "^4.1.0",
     "npmlog": "^6.0.0",
