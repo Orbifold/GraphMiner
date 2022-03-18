@@ -1,0 +1,34 @@
+{
+  "name": "@graphminer/store",
+  "version": "0.2.1",
+  "description": "Generic storage.",
+  "author": "Swa <swa@orbifold.net>",
+  "homepage": "https://graphminer.io",
+  "license": "GPL-3.0-only",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Orbifold/GraphMiner"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@graphminer/utils": "^0.2.1",
+    "lokijs": "^1.5.12",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/faker": "^5.5.9",
+    "@types/lodash": "^4.14.178",
+    "@types/lokijs": "^1.5.7",
+    "prettier": "^2.5.1"
+  }
+}

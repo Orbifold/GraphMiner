@@ -1,0 +1,46 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": [
+      "./packages/utils/lib/",
+      "./packages/store/lib/",
+      "./packages/entities/lib/"
+    ],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false,
+    "default": {
+      "outputSourceFiles": false
+    },
+    "better-docs": {
+      "logo": "../../images/GraphMinerLogo60.png",
+      "hideGenerator": true,
+      "navLinks": [
+        {
+          "label": "Orbifold",
+          "href": "https://orbifold.net"
+        },
+        {
+          "label": "Issues",
+          "href": "https://github.com/Orbifold/GraphMiner/issues"
+        }
+      ]
+    }
+  },
+  "opts": {
+    "destination": "./docs/apidocs/",
+    "recurse": true,
+    "package": "./package.json",
+    "readme": "./docs/README.md",
+    "tutorials": "./docs/notes",
+    "template": "node_modules/better-docs"
+  }
+}
