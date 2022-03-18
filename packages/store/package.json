@@ -1,6 +1,6 @@
 {
   "name": "@graphminer/store",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Generic storage.",
   "author": "Swa <swa@orbifold.net>",
   "homepage": "https://graphminer.io",
@@ -21,7 +21,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@graphminer/utils": "^0.2.2",
+    "@graphminer/utils": "^0.2.3",
     "lokijs": "^1.5.12",
     "winston": "^3.3.3"
   },
