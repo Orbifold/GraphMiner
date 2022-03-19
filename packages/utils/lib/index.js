@@ -4,11 +4,19 @@ const {faker} = require("@faker-js/faker");
 const _ = require("lodash");
 const moment = require("moment");
 const fs = require("fs");
-const DATEEXPR = /([0-9]+ *d(ays?)?)? *([0-9]+ *h(ours?)?)? *([0-9]+ *m(in(utes?)?)?)?/;
+const DateOffsetRegex = /([0-9]+ *d(ays?)?)? *([-+]?[0-9]+ *h(ours?)?)? *([0-9]+ *m(in(utes?)?)?)?/;
 // from here https://emailregex.com/
 const emailRegex =
           /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi;
 const Utils = {
+
+    /**
+     * Common validation rules.
+     * @example
+     * // If you use Vue
+     * <v-text-field :rules="validationRules.required"
+     *             label="First name"></v-text-field>
+     */
     validationRules: {
         required: (value) => !!value || "This attribute is required.",
         notEmpty: (value) => (value && value.toString().trim().length > 0) || "This attribute is required.",
@@ -18,10 +26,11 @@ const Utils = {
         text: (value) => /^[a-zA-Z\s]*$/gi.test(value) || "Only letters and white space are allowed for the name.",
         email: (value) => emailRegex.test(value) || "Not a valid email address",
     },
+
     /**
      * Proper formatting of money amount.
      * @param amount {any} Likely a number
-     * @param currency? {string} The currency to append.
+     * @param [currency=USD] {string} The currency to append (e.g. EUR, JPY, USD...)
      * @return {string}
      */
     amountToMoneyFormat(amount, currency = "USD") {
@@ -45,13 +54,30 @@ const Utils = {
         }
     },
 
+    /**
+     * Turns the given value into 'Yes' or 'No'.
+     * @param b {any} Anything
+     * @returns {string}
+     */
     boolToYesNo(b) {
         if (_.isNil(b)) {
             return "No";
         }
-        return b === true ? "Yes" : "No";
+        b = b.toString().trim().toLowerCase()
+        if (_.includes(["yes", "y", "yep", "yah", "duh"], b)) {
+            return "Yes"
+        }
+        if (_.includes(["no", "n", "nah", "nope"], b)) {
+            return "No"
+        }
+        return !!b === true ? "Yes" : "No";
     },
 
+    /**
+     * Turns a camel-type string into a title.
+     * @param name {string} Typically, a variable like e.g. "groupName".
+     * @returns {string}
+     */
     camelTypeToTitle(name) {
         if (this.isEmpty(name)) {
             return "";
@@ -60,7 +86,23 @@ const Utils = {
         return tp.charAt(0).toUpperCase() + tp.slice(1);
     },
 
-    getSubFolders(paths, current) {
+    /**
+     * Returns the sub-folder for the given level.
+     * @param paths {string[]}
+     * @param current
+     * @returns {*[]|*}
+     *
+     * @example
+     * // returns ["a","b"]
+     * getSubFolders(["/A/a", "/A/b"], "/A")
+     *
+     * // returns ["a"]
+     * getSubFolders(["/a/b"])
+     */
+    getSubFolders(paths, current = "/") {
+        if (this.isEmpty(paths)) {
+            return []
+        }
         let items = paths;
         if (current === "/") {
             return _.uniq(
@@ -79,22 +121,40 @@ const Utils = {
         return _.uniq(items);
     },
 
+    /**
+     * Returns a more human-readable file size from a raw amount.
+     * @param size {number} The raw files size.
+     * @returns {string}
+     *
+     * @example
+     *
+     * formatFileSize(1e10 ) // 9.31GB
+     */
     formatFileSize(size) {
         if (size > 1024 * 1024 * 1024 * 1024) {
-            return (size / 1024 / 1024 / 1024 / 1024).toFixed(2) + " TB";
+            return (size / 1024 / 1024 / 1024 / 1024).toFixed(2) + "TB";
         } else if (size > 1024 * 1024 * 1024) {
-            return (size / 1024 / 1024 / 1024).toFixed(2) + " GB";
+            return (size / 1024 / 1024 / 1024).toFixed(2) + "GB";
         } else if (size > 1024 * 1024) {
-            return (size / 1024 / 1024).toFixed(2) + " MB";
+            return (size / 1024 / 1024).toFixed(2) + "MB";
         } else if (size > 1024) {
-            return (size / 1024).toFixed(0) + " KB";
+            return (size / 1024).toFixed(0) + "KB";
         }
-        return size.toString() + " B";
+        return size.toString() + "B";
     },
 
-    dateToISOString(expression) {
+    /**
+     * Turns thins like "3d-2h" into an ISO date format.
+     * @param expression {string}
+     * @returns {string}
+     *
+     * @example
+     * // depends on the current time and zone
+     * dateOffsetToISOString("1d -2h") // 2022-03-20T04:39:03.818Z
+     */
+    dateOffsetToISOString(expression) {
         let match = undefined;
-        if ((match = DATEEXPR.exec(expression))) {
+        if ((match = DateOffsetRegex.exec(expression))) {
             const mom = new moment(new Date());
             const days = match[1] === undefined ? 0 : parseInt(match[1].split(" ")[0], 10);
             const hours = match[3] === undefined ? 0 : parseInt(match[3].split(" ")[0], 10);
@@ -112,7 +172,7 @@ const Utils = {
 
     /**
      * Generic testing for diverse data types.
-     * @param obj
+     * @param obj {*} Anything really.
      * @returns {boolean}
      */
     isEmpty(obj) {
@@ -134,16 +194,26 @@ const Utils = {
         }
     },
 
+    /**
+     * The negation of {@link isEmpty}.
+     * @param obj {*} Anything
+     * @returns {boolean}
+     */
     isDefined(obj) {
         return !this.isEmpty(obj);
     },
 
+    /**
+     * An alias for {@link isEmpty}.
+     * @param obj {*} Anything.
+     * @returns {boolean}
+     */
     isUndefined(obj) {
         return this.isEmpty(obj);
     },
 
     /**
-     * Returns a globally unique identifier.
+     * Returns a globally unique identifier (UUID v4).
      * @returns {string}
      * @example
      *
@@ -175,15 +245,6 @@ const Utils = {
             upper = false;
         }
         return newStr;
-        // const regex = /^[a-z]{0,1}|\s\w/gi;
-        //
-        // str = str.toLowerCase();//?
-        //
-        // str.match(regex).forEach((char) => {
-        // 	str = str.replace(char, char.toUpperCase());
-        // });
-        //
-        // return str;
     },
 
     /***
@@ -196,7 +257,7 @@ const Utils = {
      * // you can access things via: a.1 or b.c
      *
      */
-    getJsonPath: function (d, path) {
+    getJsonPart(d, path) {
         if (path === "." || path === "/") {
             return d;
         }
@@ -218,15 +279,26 @@ const Utils = {
         } else {
             res = "[?]";
         }
-        return res;
+        return res || null;
     },
 
     /***
      * Replaces in object d the property path with obj.
      * If the path does not exist the value will not be created.
+     @example
+     const obj = {
+            a: {
+                b: 4,
+                c: {r: "T"}
+            }
+        }
+     deepReplace(obj, "s", "a") // give {a: "s"}
+
      * @param rootObject {Object} The object in which to replace at the given path.
      * @param path {String} Something like 'a.b.c'.
      * @param substitute {Object} The object which replaces the value.
+     *
+
      */
     deepReplace(rootObject, substitute, path) {
         if (path === undefined) {
@@ -263,6 +335,12 @@ const Utils = {
         return rootObject;
     },
 
+    /**
+     * Returns an OS-specific, temporary file path.
+     * @param [fileName=null] {string} If not given a random name will be generated.
+     * @param [extension="tmp"] {string} The extension to use.
+     * @returns {string}
+     */
     getTempFilePath(fileName = null, extension = "tmp") {
         const os = require("os");
         const tempDir = os.tmpdir();
@@ -273,13 +351,27 @@ const Utils = {
         return path.join(tempDir, `${fileName}.${extension}`);
     },
 
+    /**
+     * Creates a zero-size temporary file and returns the path.
+     * See also {@link getTempFilePath}.
+     * @param [fileName=null] {string} If not given a random name will be generated.
+     * @param [extension="tmp"] {string} The extension to use.
+     * @returns {string}
+     */
     createTempFile(fileName = null, extension = "tmp") {
         const filePath = this.getTempFilePath();
         fs.closeSync(fs.openSync(filePath, "w"));
         return filePath;
     },
 
+    /**
+     * Deletes the specified file or directory.
+     * @param filePath {string} Path representing a file or a directory.
+     */
     deleteFileOrDirectory(filePath) {
+        if (this.isEmpty(filePath)) {
+            return
+        }
         if (fs.existsSync(filePath)) {
             if (this.isDirectory(filePath)) {
                 fs.rmSync(filePath, {recursive: true, force: true});
@@ -289,11 +381,19 @@ const Utils = {
         }
     },
 
+    /**
+     * Returns whether the given path is a directory.
+     * @param somePath {string} Path to something.
+     * @returns {boolean}
+     */
     isDirectory(somePath) {
+        if (this.isEmpty(somePath)) {
+            return false
+        }
         return fs.lstatSync(somePath).isDirectory();
     },
     /**
-     * Generates a random identifier with default length 10;
+     * Generates a random identifier with default length 10.
      * @param length {Number} The length of the identifier to be generated.
      * @param onlyLetters {boolean} if true will use only letters, otherwise letters and numbers are used.
      * @returns {string} The id in string format.
@@ -324,6 +424,12 @@ const Utils = {
         return result;
     },
 
+    /**
+     * Generates a random integer.
+     * @param [from=0] {number} The start of the interval.
+     * @param [to=1e10] {number} The end of the interval.
+     * @returns {number}
+     */
     randomInteger(from = 0, to = 1e10) {
         if (to - from < 1) {
             throw new Error("The bounds should be integers and differ by at least one.");
@@ -360,6 +466,12 @@ const Utils = {
     },
 
 
+    /**
+     * Throws an error if the given JSON does not have the correct attribute "typeName".
+     *
+     * @param json {*} Some serialized entity.
+     * @param typeName {string} The expected serialized type.
+     */
     validateJsonIsForType(json, typeName) {
         if (_.isPlainObject(json)) {
             if (this.isEmpty(json.typeName)) {

@@ -47,4 +47,55 @@ describe("utils", function () {
         expect(getFloat("2w")).toEqual(14);
         expect(getFloat("1.5m")).toEqual(45);
     });
+    it("should render currency", function () {
+        expect(utils.amountToMoneyFormat(12)).toEqual("US$12.00")
+        expect(utils.amountToMoneyFormat(1, "EUR")).toEqual("€1.00")
+        expect(utils.amountToMoneyFormat(null, "EUR")).toEqual("")
+    });
+    it("should render yes or no", function () {
+        expect(utils.boolToYesNo("y")).toEqual("Yes")
+        expect(utils.boolToYesNo("yep")).toEqual("Yes")
+        expect(utils.boolToYesNo("nope")).toEqual("No")
+    });
+    it("should title-ize variables", function () {
+        expect(utils.camelTypeToTitle("itWorks")).toEqual("It Works")
+        expect(utils.camelTypeToTitle("v10")).toEqual("V10")
+        expect(utils.camelTypeToTitle("WhatNot")).toEqual("What Not")
+    });
+    it("should get subfolder", function () {
+        expect(utils.getSubFolders(["/a/b"], "/a")).toEqual(["b"])
+        expect(utils.getSubFolders(["/a/b"])).toEqual(["a"])
+        expect(utils.getSubFolders(["/A/a", "/A/b"], "/A")).toEqual(["a", "b"])
+    });
+    it("should format files sizes", function () {
+        expect(utils.formatFileSize(1025)).toEqual("1KB")
+        expect(utils.formatFileSize(1e10)).toEqual("9.31GB")
+    });
+
+    it("should get a JSON part", function () {
+        expect(utils.getJsonPart({a: {b: 2}}, "a.b")).toEqual(2)
+        expect(utils.getJsonPart({a: {b: 2}})).toEqual({a: {b: 2}})
+        expect(utils.getJsonPart({a: {b: 2}}, "a.b.c")).toBeNull()
+    });
+
+    it("should deep replace", function () {
+        let obj = {
+            a: {
+                b: 4,
+                c: {r: "T"}
+            }
+        }
+        expect(utils.deepReplace(obj, "s", "a")).toEqual({a: "s"})
+        obj = {
+            a: {
+                b: 4,
+                c: {r: "T"}
+            }
+        }
+        expect(utils.deepReplace(obj, "s", "a.c")).toEqual({a: {b: 4, c: "s"}})
+    });
+    it("should get temp paths", function () {
+        expect(utils.getTempFilePath().slice(-3)).toEqual("tmp")
+        expect(utils.getTempFilePath(null, "abc").slice(-3)).toEqual("abc")
+    });
 });
