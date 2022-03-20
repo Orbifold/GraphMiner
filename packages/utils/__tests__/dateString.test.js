@@ -1,6 +1,6 @@
 const _ = require("lodash");
 const moment = require("moment");
-const DateString = require("../lib/dateString");
+const {DateString} = require("../");
 
 describe("DateString", function () {
 	it("should get date offsets", function () {

@@ -1,6 +1,6 @@
 const EntityBase = require("./entityBase");
-const utils = require("@graphminer/utils");
-const strings = utils.strings;
+const {Utils,Strings} = require("@graphminer/Utils");
+
 const _ = require("lodash");
 
 /**
@@ -24,22 +24,22 @@ class ObjectProperty extends EntityBase {
 	 * const hasFriend = new ObjectProperty("hasFriend", "Person");
 	 */
 	constructor(propertyName, objectType, subjectType = null) {
-		if (utils.isEmpty(propertyName)) {
-			throw new Error(strings.IsNil("propertyName", "ObjectProperty"));
+		if (Utils.isEmpty(propertyName)) {
+			throw new Error(Strings.IsNil("propertyName", "ObjectProperty"));
 		}
 
-		if (utils.isEmpty(objectType)) {
-			throw new Error(strings.IsNil("objectType", "ObjectProperty"));
+		if (Utils.isEmpty(objectType)) {
+			throw new Error(Strings.IsNil("objectType", "ObjectProperty"));
 		}
 		if (!_.isString(propertyName)) {
-			throw new Error(strings.WrongArgument("propertyName", typeof propertyName, "string", "ObjectProperty"));
+			throw new Error(Strings.WrongArgument("propertyName", typeof propertyName, "string", "ObjectProperty"));
 		}
 		if (!_.isString(objectType)) {
-			throw new Error(strings.WrongArgument("objectType", typeof objectType, "string", "ObjectProperty"));
+			throw new Error(Strings.WrongArgument("objectType", typeof objectType, "string", "ObjectProperty"));
 		}
 		// the subject is not an instance, using a string solves all sorts of circular references.
-		if (!utils.isEmpty(subjectType) && !_.isString(subjectType)) {
-			throw new Error(strings.WrongArgument("subjectType", typeof subjectType, "string", "ObjectProperty"));
+		if (!Utils.isEmpty(subjectType) && !_.isString(subjectType)) {
+			throw new Error(Strings.WrongArgument("subjectType", typeof subjectType, "string", "ObjectProperty"));
 		}
 		super("ObjectProperty", propertyName);
 		this.#objectType = objectType;
@@ -60,11 +60,11 @@ class ObjectProperty extends EntityBase {
 	 * @param v {string} The type name.
 	 */
 	set objectType(v) {
-		if (utils.isEmpty(v)) {
-			throw new Error(strings.IsNil("objectType", "ObjectProperty"));
+		if (Utils.isEmpty(v)) {
+			throw new Error(Strings.IsNil("objectType", "ObjectProperty"));
 		}
 		if (!_.isString(v)) {
-			throw new Error(strings.WrongArgument("objectType", typeof v, "string", "ObjectProperty.objectType"));
+			throw new Error(Strings.WrongArgument("objectType", typeof v, "string", "ObjectProperty.objectType"));
 		}
 		// whether the type exists will be checked when adding to the entities and if the schema is enforced
 		this.#objectType = v;
@@ -72,7 +72,7 @@ class ObjectProperty extends EntityBase {
 
 	/**
 	 * Returns the type owning this value property.
-	 * @returns {strings}
+	 * @returns {Strings}
 	 */
 	get subjectType() {
 		return this.#subjectType;
@@ -83,8 +83,8 @@ class ObjectProperty extends EntityBase {
 	 * @param v {string} The name of the type.
 	 */
 	set subjectType(v) {
-		if (!utils.isEmpty(v) && !_.isString(v)) {
-			throw new Error(strings.WrongArgument("subjectType", typeof v, "string", "ObjectProperty.subjectType"));
+		if (!Utils.isEmpty(v) && !_.isString(v)) {
+			throw new Error(Strings.WrongArgument("subjectType", typeof v, "string", "ObjectProperty.subjectType"));
 		}
 		this.#subjectType = v;
 	}
@@ -95,12 +95,12 @@ class ObjectProperty extends EntityBase {
 	 * @returns {ObjectProperty}
 	 */
 	static fromJSON(json) {
-		utils.validateJsonIsForType(json, "ObjectProperty");
+		Utils.validateJsonIsForType(json, "ObjectProperty");
 		const prop = new ObjectProperty(json.name, json.objectType, json.subjectType);
-		if (!utils.isEmpty(json.id)) {
+		if (!Utils.isEmpty(json.id)) {
 			prop.id = json.id;
 		}
-		if (!utils.isEmpty(json.description)) {
+		if (!Utils.isEmpty(json.description)) {
 			prop.description = json.description;
 		}
 
@@ -114,23 +114,23 @@ class ObjectProperty extends EntityBase {
 	 * @param json {*} A serialized object property.
 	 */
 	static validate(json) {
-		if (utils.isEmpty(json)) {
-			throw new Error(strings.IsNil("json", "ObjectProperty.validate"));
+		if (Utils.isEmpty(json)) {
+			throw new Error(Strings.IsNil("json", "ObjectProperty.validate"));
 		}
 		if (json.typeName !== "ObjectProperty") {
-			throw new Error(strings.WrongDeserializationType(json.typeName, "ObjectProperty"));
+			throw new Error(Strings.WrongDeserializationType(json.typeName, "ObjectProperty"));
 		}
-		if (utils.isEmpty(json.id)) {
-			throw new Error(strings.IsNil("id", "ObjectProperty.validate"));
+		if (Utils.isEmpty(json.id)) {
+			throw new Error(Strings.IsNil("id", "ObjectProperty.validate"));
 		}
-		if (utils.isEmpty(json.objectType)) {
-			throw new Error(strings.IsNil("objectType", "ObjectProperty.validate"));
+		if (Utils.isEmpty(json.objectType)) {
+			throw new Error(Strings.IsNil("objectType", "ObjectProperty.validate"));
 		}
 		if (!_.isString(json.name)) {
-			throw new Error(strings.WrongArgument("propertyName", typeof json.name, "string", "ObjectProperty"));
+			throw new Error(Strings.WrongArgument("propertyName", typeof json.name, "string", "ObjectProperty"));
 		}
 		if (!_.isString(json.objectType)) {
-			throw new Error(strings.WrongArgument("objectType", typeof json.objectType, "string", "ObjectProperty"));
+			throw new Error(Strings.WrongArgument("objectType", typeof json.objectType, "string", "ObjectProperty"));
 		}
 
 		// the subject type can be specified but will be ignored or set
@@ -140,7 +140,7 @@ class ObjectProperty extends EntityBase {
 	clone() {
 		const json = this.toJSON();
 		const prop = ObjectProperty.fromJSON(json);
-		prop.id = utils.id();
+		prop.id = Utils.id();
 		return prop;
 	}
 

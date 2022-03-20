@@ -1,6 +1,6 @@
 const Durations = require("./durations");
 const Predecessor = require("./predecessor");
-const Utils = require("./");
+const Utils = require("./utils");
 const _ = require("lodash");
 
 /*

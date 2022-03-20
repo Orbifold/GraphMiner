@@ -1,5 +1,4 @@
-const Predecessors = require("../lib/predecessors");
-const Predecessor = require("../lib/predecessor");
+const {Predecessors, Predecessor} = require("../");
 
 const parsePredecessor = Predecessors.parsePredecessor;
 const parsePredecessors = Predecessors.parsePredecessors;

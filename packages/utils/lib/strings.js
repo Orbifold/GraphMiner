@@ -1,4 +1,5 @@
 const _ = require("lodash");
+
 // ===================================================================
 // Consolidated error message templates.
 // ===================================================================
@@ -42,6 +43,14 @@ const Strings = {
             return `The value of '${what}' is nil.`;
         } else {
             return `The value of '${what}' is nil in '${where}'.`;
+        }
+    },
+    NotImplementedAbstract:()=>"This method has not been implemented by the inheritor.",
+    NotImplementedMethod:(methodName, objName=null)=>{
+        if (_.isNil(objName)) {
+            return `The method '${methodName}' is not implemented.`;
+        } else {
+            return `The method '${methodName}' is not implemented by'${objName}' .`;
         }
     },
     Invalid: (what, where = null) => {
@@ -111,11 +120,11 @@ const Strings = {
     FailedPackageLoading: (packageName) => `Failed to load package '${packageName}'.`,
 
     randomLetters(length = 10, mixedCase = true) {
-        const Utils = require("./index")
+        const Utils = require("./utils")
         return Utils.randomLetters(length, mixedCase);
     },
     camelToTitle(str) {
-        const Utils = require("./index")
+        const Utils = require("./utils")
         return Utils.camelTypeToTitle(str)
     },
     /**
@@ -126,7 +135,7 @@ const Strings = {
      * @return {any[] | string[]}
      */
     stringToStringArray(s, separator = ",", ignoreEmpty = true) {
-        const Utils = require("./index")
+        const Utils = require("./utils")
         if (Utils.isEmpty(s)) {
             return [];
         }
@@ -146,7 +155,7 @@ const Strings = {
      * @return {any[] | string[]}
      */
     stringToNumberArray(s, separator = ",", ignoreEmpty = true) {
-        const Utils = require("./index")
+        const Utils = require("./utils")
         if (Utils.isEmpty(s)) {
             return [];
         }

@@ -1,4 +1,4 @@
-const Utils = require("./");
+const Utils = require("./utils");
 const Durations = require("./durations");
 
 /**

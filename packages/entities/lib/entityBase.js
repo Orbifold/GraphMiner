@@ -1,5 +1,5 @@
-const utils = require("@graphminer/utils");
-const strings = utils.strings;
+const {Utils,Strings} = require("@graphminer/Utils");
+
 
 /**
  * Base class for entities.
@@ -16,13 +16,13 @@ class EntityBase {
 	 */
 	constructor(typeName, name) {
 		if (this.constructor === EntityBase) {
-			throw new Error(strings.AbstractClass("EntityBase"));
+			throw new Error(Strings.AbstractClass("EntityBase"));
 		}
-		if (utils.isEmpty(typeName)) {
-			throw new Error(strings.IsNil("typeName"));
+		if (Utils.isEmpty(typeName)) {
+			throw new Error(Strings.IsNil("typeName"));
 		}
 		this.typeName = typeName;
-		this.id = utils.id();
+		this.id = Utils.id();
 		this.name = name;
 		this.description = null;
 	}
@@ -54,7 +54,7 @@ class EntityBase {
 	 * @returns EntityBase
 	 */
 	clone() {
-		throw new Error(strings.ForInheritors());
+		throw new Error(Strings.ForInheritors());
 	}
 }
 

@@ -3,9 +3,9 @@
  * */
 const moment = require("moment");
 
-const Dates = require("./dates");
-const Utils = require("./");
 const _ = require("lodash");
+const Dates = require("./dates");
+const Utils = require("./utils");
 /*
  * Utilities related to dates in the format "MM/DD/YY".
  * */

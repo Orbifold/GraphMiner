@@ -7,9 +7,10 @@
 // ===================================================================
 module.exports = function (wallaby) {
     return {
-        tests:[
-            {"pattern": "packages/utils/__tests__/*.test.js", "ignore": false},
-            {"pattern": "packages/store/__tests__/*.test.js", "ignore": true}
+        tests: [
+            {"pattern": "packages/utils/__tests__/*.test.js", "ignore": true},
+            {"pattern": "packages/store/__tests__/*.test.js", "ignore": true},
+            {"pattern": "packages/entities/__tests__/entityType.test.js", "ignore": false}
         ]
     }
 }

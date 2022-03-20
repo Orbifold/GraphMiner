@@ -1,6 +1,6 @@
 const _ = require("lodash");
 const moment = require("moment");
-const Utils = require("../")
+const {Utils} = require("../")
 
 
 describe('Diverse', function () {

@@ -1,8 +1,10 @@
 const _ = require("lodash");
 const moment = require("moment");
-const time = require("../lib/time")
+const Time = require("../lib/time");
 
-const isRecent = time.isRecent;
+
+
+const isRecent = Time.isRecent;
 describe("Time", function () {
     it("should detect a recent timestamp", function () {
         const t1 = moment().add(3, "second").toDate();

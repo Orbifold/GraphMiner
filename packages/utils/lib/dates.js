@@ -1,7 +1,8 @@
 const moment = require("moment");
-
-const Utils = require("./");
 const _ = require("lodash");
+const Utils = require("./utils");
+
+
 
 /*
  * Utilities related to the JavaScript Date type.

@@ -10,6 +10,6 @@
     "docs": "jsdoc -c ./jsdoc.json",
     "bootstrap": "lerna clean & lerna bootstrap",
     "start": "cd ./packages/client & npm run start",
-    "test": "lerna run test"
+    "test": "jest"
   }
 }

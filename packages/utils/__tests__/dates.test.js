@@ -1,7 +1,5 @@
 const moment = require("moment");
-
-const Dates = require("../lib/dates");
-const Time = require("../lib/time");
+const {Dates, Time} = require("../");
 const _ = require("lodash");
 
 
@@ -35,7 +33,7 @@ describe("Dates", function () {
 		expect(dd).toEqual(null);
 	});
 
-	it("should test for valid dates", function () {
+	it("should test for valid Dates", function () {
 		expect(Dates.isValidDate("01/02/22")).toBeTruthy();
 		expect(Dates.isValidDate("01/02/1968")).toBeTruthy();
 		expect(Dates.isValidDate("01/02/19686565")).not.toBeTruthy();
@@ -45,7 +43,7 @@ describe("Dates", function () {
 		expect(Dates.isValidDate(0.33)).not.toBeTruthy();
 		expect(Dates.isValidDate(Number.NaN)).not.toBeTruthy();
 	});
-	it("should make dates between", function () {
+	it("should make Dates between", function () {
 		let coll = Dates.makeDatesBetween("05/01/21", "05/21/21");
 		expect(coll.length).toEqual(20);
 		coll = Dates.makeDatesBetween("05/01/21", "05/01/21");

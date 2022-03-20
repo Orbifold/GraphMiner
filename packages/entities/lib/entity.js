@@ -1,14 +1,12 @@
-const utils = require("@graphminer/utils");
-const strings = utils.strings;
+const {Utils,Strings} = require("@graphminer/Utils");
 
 const EntityBase = require("./entityBase");
 
 const _ = require("lodash");
 const ObjectProperty = require("./objectProperty");
-const EntityType = require("./entityType");
 
 /**
- * Entity or instance defines a concrete piece of data based on a predefined type.
+ * Entity or **instance** defines a concrete piece of data based on a predefined type.
  */
 class Entity extends EntityBase {
 	/**
@@ -23,6 +21,7 @@ class Entity extends EntityBase {
 	 * @type *
 	 */
 	objects;
+	space;
 
 	/**
 	 * Creates a new instance.
@@ -31,17 +30,20 @@ class Entity extends EntityBase {
 	 * @param name {string} The name of the entity.
 	 */
 	constructor(entityType, name) {
-		if (utils.isEmpty(entityType)) {
+		if (Utils.isEmpty(entityType)) {
 			super("Unknown", name);
 			this.entityType = null;
+			// can't know with the type
+			this.space = null;
 		} else {
 			const EntityType = require("./entityType");
 
 			if (!(entityType instanceof EntityType)) {
-				throw new Error(strings.ShoudBeType("entityType", "EntityType", "Entity"));
+				throw new Error(Strings.ShoudBeType("entityType", "EntityType", "Entity"));
 			}
 			super(entityType.name, name);
 			this.entityType = entityType;
+			this.space = entityType.space;
 		}
 
 		this.values = {};
@@ -66,10 +68,10 @@ class Entity extends EntityBase {
 		// if the type is nog given it creates a sealed/orphaned entity
 
 		let e = new Entity(entityType, json.name);
-		if (!utils.isEmpty(json.id)) {
+		if (!Utils.isEmpty(json.id)) {
 			e.id = json.id;
 		}
-		if (utils.isEmpty(entityType)) {
+		if (Utils.isEmpty(entityType)) {
 			// data can't be checked against the schema
 			e = _.assign(e, json);
 		} else {
@@ -78,7 +80,9 @@ class Entity extends EntityBase {
 				e.setValue(p.name, json[p.name]);
 			}
 			e.description = json.description;
+			e.name = json.name
 		}
+		e.space = entityType?.space
 		return e;
 	}
 
@@ -89,7 +93,7 @@ class Entity extends EntityBase {
 	 */
 	get(options) {
 		let found = this.getValue(options);
-		if (!utils.isEmpty(found)) {
+		if (!Utils.isEmpty(found)) {
 			return found;
 		}
 		return this.getObject(options);
@@ -161,7 +165,7 @@ class Entity extends EntityBase {
 		const definition = this.entityType.getObjectProperty(objectPropertyName);
 		const expectedType = definition.objectType;
 		if (obj.typeName !== expectedType) {
-			throw new Error(strings.ShoudBeType(objectPropertyName, expectedType, this.typeName));
+			throw new Error(Strings.ShoudBeType(objectPropertyName, expectedType, this.typeName));
 		}
 	}
 
@@ -241,11 +245,11 @@ class Entity extends EntityBase {
 	}
 
 	valuePropertyExists(valuePropertyName) {
-		return !utils.isEmpty(_.find(this.entityType.valueProperties, { name: valuePropertyName }));
+		return !Utils.isEmpty(_.find(this.entityType.valueProperties, { name: valuePropertyName }));
 	}
 
 	objectPropertyExists(objectPropertyName) {
-		return !utils.isEmpty(_.find(this.entityType.objectProperties, { name: objectPropertyName }));
+		return !Utils.isEmpty(_.find(this.entityType.objectProperties, { name: objectPropertyName }));
 	}
 
 	getValueProperty(valuePropertyName) {

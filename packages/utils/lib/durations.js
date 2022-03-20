@@ -1,7 +1,8 @@
 const moment = require("moment");
 const _ = require("lodash");
-const utils = require("./");
-const dates = require("./dates");
+const Utils = require("./utils");
+const Dates = require("./dates");
+
 /*
  * Utilities related to durations.
  * */
@@ -68,9 +69,9 @@ class Durations {
      * @return {number}
      */
     static daysBetween(from, to) {
-        let fromDate = dates.makeDate(from);
-        let toDate = dates.makeDate(to);
-        if (!utils.isEmpty(fromDate) && !utils.isEmpty(toDate)) {
+        let fromDate = Dates.makeDate(from);
+        let toDate = Dates.makeDate(to);
+        if (!Utils.isEmpty(fromDate) && !Utils.isEmpty(toDate)) {
             if (fromDate === toDate) {
                 return 0;
             }

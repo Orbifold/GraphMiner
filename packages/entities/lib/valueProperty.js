@@ -1,7 +1,6 @@
 const EntityBase = require("./entityBase");
-const utils = require("@graphminer/utils");
-const EntityType = require("./entityType");
-const strings = utils.strings;
+const {Utils,Strings} = require("@graphminer/Utils");
+
 const _ = require("lodash");
 
 /**
@@ -22,14 +21,14 @@ class ValueProperty extends EntityBase {
 	 * @param [subjectType] {string} The type owning this property.
 	 */
 	constructor(propertyName, valueType, subjectType = null) {
-		if (utils.isEmpty(propertyName)) {
-			throw new Error(strings.IsNil("propertyName", "ValueProperty"));
+		if (Utils.isEmpty(propertyName)) {
+			throw new Error(Strings.IsNil("propertyName", "ValueProperty"));
 		}
-		// if (utils.isEmpty(subjectType)) {
-		// 	throw new Error(strings.IsNil("subjectType", "ValueProperty"));
+		// if (Utils.isEmpty(subjectType)) {
+		// 	throw new Error(Strings.IsNil("subjectType", "ValueProperty"));
 		// }
-		if (utils.isEmpty(valueType)) {
-			throw new Error(strings.IsNil("valueType", "ValueProperty"));
+		if (Utils.isEmpty(valueType)) {
+			throw new Error(Strings.IsNil("valueType", "ValueProperty"));
 		}
 		super("ValueProperty", propertyName);
 		this.valueType = valueType;
@@ -38,7 +37,7 @@ class ValueProperty extends EntityBase {
 
 	/**
 	 * Returns the type owning this value property.
-	 * @returns {strings}
+	 * @returns {Strings}
 	 */
 	get subjectType() {
 		return this.#subjectType;
@@ -49,8 +48,8 @@ class ValueProperty extends EntityBase {
 	 * @param v {string} The name of the type.
 	 */
 	set subjectType(v) {
-		if (!utils.isEmpty(v) && !_.isString(v)) {
-			throw new Error(strings.WrongArgument("subjectType", typeof v, "string", "ObjectProperty.subjectType"));
+		if (!Utils.isEmpty(v) && !_.isString(v)) {
+			throw new Error(Strings.WrongArgument("subjectType", typeof v, "string", "ObjectProperty.subjectType"));
 		}
 		this.#subjectType = v;
 	}
@@ -77,12 +76,12 @@ class ValueProperty extends EntityBase {
 	 * @returns {ValueProperty}
 	 */
 	static fromJSON(json) {
-		utils.validateJsonIsForType(json, "ValueProperty");
+		Utils.validateJsonIsForType(json, "ValueProperty");
 		const prop = new ValueProperty(json.name, json.valueType, json.subjectType);
-		if (!utils.isEmpty(json.id)) {
+		if (!Utils.isEmpty(json.id)) {
 			prop.id = json.id;
 		}
-		if (!utils.isEmpty(json.description)) {
+		if (!Utils.isEmpty(json.description)) {
 			prop.description = json.description;
 		}
 
@@ -99,28 +98,28 @@ class ValueProperty extends EntityBase {
 		// avoid circular reference
 		const EntityType = require("./entityType");
 
-		if (utils.isEmpty(json)) {
-			throw new Error(strings.IsNil("json", "ValueProperty.validate"));
+		if (Utils.isEmpty(json)) {
+			throw new Error(Strings.IsNil("json", "ValueProperty.validate"));
 		}
 		if (json.typeName !== "ValueProperty") {
-			throw new Error(strings.WrongDeserializationType(json.typeName, "ValueProperty"));
+			throw new Error(Strings.WrongDeserializationType(json.typeName, "ValueProperty"));
 		}
-		if (utils.isEmpty(json.id)) {
-			throw new Error(strings.IsNil("id", "ValueProperty.validate"));
+		if (Utils.isEmpty(json.id)) {
+			throw new Error(Strings.IsNil("id", "ValueProperty.validate"));
 		}
-		if (utils.isEmpty(json.valueType)) {
-			throw new Error(strings.IsNil("valueType", "ValueProperty.validate"));
+		if (Utils.isEmpty(json.valueType)) {
+			throw new Error(Strings.IsNil("valueType", "ValueProperty.validate"));
 		}
 		if (!_.isString(json.name)) {
-			throw new Error(strings.WrongArgument("propertyName", typeof json.name, "string", "ValueProperty"));
+			throw new Error(Strings.WrongArgument("propertyName", typeof json.name, "string", "ValueProperty"));
 		}
 		if (!ValueProperty.isValueType(json.valueType)) {
-			throw new Error(strings.Invalid(json.valueType, "ValueProperty.validate"));
+			throw new Error(Strings.Invalid(json.valueType, "ValueProperty.validate"));
 		}
 	}
 
 	static isValueType(propertyType) {
-		if (utils.isEmpty(propertyType)) {
+		if (Utils.isEmpty(propertyType)) {
 			return false;
 		}
 		if (!_.isString(propertyType)) {
@@ -139,7 +138,7 @@ class ValueProperty extends EntityBase {
 	 */
 	static formatValueType(valueTypeName) {
 		if (!ValueProperty.isValueType(valueTypeName)) {
-			throw new Error(strings.InvalidValueType(valueTypeName));
+			throw new Error(Strings.InvalidValueType(valueTypeName));
 		}
 		const isArrayType = valueTypeName.startsWith("[");
 		let baseType = valueTypeName;
@@ -162,7 +161,7 @@ class ValueProperty extends EntityBase {
 	clone() {
 		const json = this.toJSON();
 		const prop = ValueProperty.fromJSON(json);
-		prop.id = utils.id();
+		prop.id = Utils.id();
 		return prop;
 	}
 

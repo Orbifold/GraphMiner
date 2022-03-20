@@ -1,11 +1,12 @@
 const _ = require("lodash");
-const utils = require("../")
-const getNumber = utils.getNumber;
-const getFloat = utils.getFloat;
-const isEmpty = utils.isEmpty;
-const getInteger = utils.getInteger;
+const {Utils} = require("../");
 
-describe("utils", function () {
+const getNumber = Utils.getNumber;
+const getFloat = Utils.getFloat;
+const isEmpty = Utils.isEmpty;
+const getInteger = Utils.getInteger;
+
+describe("Utils", function () {
     it("should resolve numbers", function () {
         expect(getNumber("44d")).toEqual(44);
         expect(getNumber("414")).toEqual(414);
@@ -22,9 +23,9 @@ describe("utils", function () {
     });
     it("should title case things", function () {
         let s = "this is it!";
-        expect(utils.titleCase(s)).toEqual("This Is It!");
+        expect(Utils.titleCase(s)).toEqual("This Is It!");
         s = "wonderTime";
-        expect(utils.titleCase(s)).toEqual("Wondertime");
+        expect(Utils.titleCase(s)).toEqual("Wondertime");
     });
     it("should test for empty", function () {
         expect(isEmpty(0)).toBeFalsy();
@@ -48,34 +49,34 @@ describe("utils", function () {
         expect(getFloat("1.5m")).toEqual(45);
     });
     it("should render currency", function () {
-        expect(utils.amountToMoneyFormat(12)).toEqual("US$12.00")
-        expect(utils.amountToMoneyFormat(1, "EUR")).toEqual("€1.00")
-        expect(utils.amountToMoneyFormat(null, "EUR")).toEqual("")
+        expect(Utils.amountToMoneyFormat(12)).toEqual("US$12.00")
+        expect(Utils.amountToMoneyFormat(1, "EUR")).toEqual("€1.00")
+        expect(Utils.amountToMoneyFormat(null, "EUR")).toEqual("")
     });
     it("should render yes or no", function () {
-        expect(utils.boolToYesNo("y")).toEqual("Yes")
-        expect(utils.boolToYesNo("yep")).toEqual("Yes")
-        expect(utils.boolToYesNo("nope")).toEqual("No")
+        expect(Utils.boolToYesNo("y")).toEqual("Yes")
+        expect(Utils.boolToYesNo("yep")).toEqual("Yes")
+        expect(Utils.boolToYesNo("nope")).toEqual("No")
     });
     it("should title-ize variables", function () {
-        expect(utils.camelTypeToTitle("itWorks")).toEqual("It Works")
-        expect(utils.camelTypeToTitle("v10")).toEqual("V10")
-        expect(utils.camelTypeToTitle("WhatNot")).toEqual("What Not")
+        expect(Utils.camelTypeToTitle("itWorks")).toEqual("It Works")
+        expect(Utils.camelTypeToTitle("v10")).toEqual("V10")
+        expect(Utils.camelTypeToTitle("WhatNot")).toEqual("What Not")
     });
     it("should get subfolder", function () {
-        expect(utils.getSubFolders(["/a/b"], "/a")).toEqual(["b"])
-        expect(utils.getSubFolders(["/a/b"])).toEqual(["a"])
-        expect(utils.getSubFolders(["/A/a", "/A/b"], "/A")).toEqual(["a", "b"])
+        expect(Utils.getSubFolders(["/a/b"], "/a")).toEqual(["b"])
+        expect(Utils.getSubFolders(["/a/b"])).toEqual(["a"])
+        expect(Utils.getSubFolders(["/A/a", "/A/b"], "/A")).toEqual(["a", "b"])
     });
     it("should format files sizes", function () {
-        expect(utils.formatFileSize(1025)).toEqual("1KB")
-        expect(utils.formatFileSize(1e10)).toEqual("9.31GB")
+        expect(Utils.formatFileSize(1025)).toEqual("1KB")
+        expect(Utils.formatFileSize(1e10)).toEqual("9.31GB")
     });
 
     it("should get a JSON part", function () {
-        expect(utils.getJsonPart({a: {b: 2}}, "a.b")).toEqual(2)
-        expect(utils.getJsonPart({a: {b: 2}})).toEqual({a: {b: 2}})
-        expect(utils.getJsonPart({a: {b: 2}}, "a.b.c")).toBeNull()
+        expect(Utils.getJsonPart({a: {b: 2}}, "a.b")).toEqual(2)
+        expect(Utils.getJsonPart({a: {b: 2}})).toEqual({a: {b: 2}})
+        expect(Utils.getJsonPart({a: {b: 2}}, "a.b.c")).toBeNull()
     });
 
     it("should deep replace", function () {
@@ -85,17 +86,17 @@ describe("utils", function () {
                 c: {r: "T"}
             }
         }
-        expect(utils.deepReplace(obj, "s", "a")).toEqual({a: "s"})
+        expect(Utils.deepReplace(obj, "s", "a")).toEqual({a: "s"})
         obj = {
             a: {
                 b: 4,
                 c: {r: "T"}
             }
         }
-        expect(utils.deepReplace(obj, "s", "a.c")).toEqual({a: {b: 4, c: "s"}})
+        expect(Utils.deepReplace(obj, "s", "a.c")).toEqual({a: {b: 4, c: "s"}})
     });
     it("should get temp paths", function () {
-        expect(utils.getTempFilePath().slice(-3)).toEqual("tmp")
-        expect(utils.getTempFilePath(null, "abc").slice(-3)).toEqual("abc")
+        expect(Utils.getTempFilePath().slice(-3)).toEqual("tmp")
+        expect(Utils.getTempFilePath(null, "abc").slice(-3)).toEqual("abc")
     });
 });
