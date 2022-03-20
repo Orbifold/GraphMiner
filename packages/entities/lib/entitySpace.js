@@ -433,6 +433,15 @@ class EntitySpace {
     }
 
     /**
+     * Clears the space of entity types and instances.
+     * @returns {Promise<void>}
+     */
+    async clear(){
+        this.ensureStoreMethodExists("clear");
+        await this.store.clear()
+    }
+
+    /**
      * Upserts an instance of the specified type.
      *
      * @see addInstance
@@ -455,9 +464,9 @@ class EntitySpace {
             let data = instanceSpec
             if (instanceSpec instanceof Entity) {
                 data = instanceSpec.toJSON()
-            }else if (_.isPlainObject(instanceSpec)){
+            } else if (_.isPlainObject(instanceSpec)) {
                 data = instanceSpec
-            }else if(_.isString(instanceSpec)){
+            } else if (_.isString(instanceSpec)) {
                 data = {
                     name: instanceSpec
                 }
@@ -584,10 +593,10 @@ class EntitySpace {
             return null;
         }
         const typeName = found.typeName;
-        if(this.enforceSchema){
+        if (this.enforceSchema) {
             const entityType = await this.getEntityType(typeName);
             return Entity.fromJSON(entityType, found);
-        }else{
+        } else {
             const entity = new Entity(null, null)
             _.assign(entity, found)
             entity.typeName = typeName
@@ -661,6 +670,26 @@ class EntitySpace {
         this.ensureStoreMethodExists("removeInstances");
         await this.store.removeInstances(entityTypeName);
     }
+
+    /**
+     * Removes an instance.
+     * @param entitySpec {string|Entity|*} The id of the instance, an entity or a serialized entity.
+     * @returns {Promise<void>}
+     */
+    async removeInstance(entitySpec) {
+        if (Utils.isEmpty(entitySpec)) {
+            return
+        }
+        this.ensureStoreMethodExists("removeInstance")
+        if (_.isString(entitySpec)) {
+            await this.store.removeInstance(entitySpec)
+        } else if ((entitySpec instanceof Entity) || _.isPlainObject(entitySpec)) {
+            await this.store.removeInstance(entitySpec.id)
+        }else{
+            throw new Error(Strings.WrongArgument("entitySpec",typeof entitySpec,"id or entity", "EntitySpace.removeInstance"))
+        }
+    }
+
 
     async updateEntityType(entityType) {
         if (Utils.isEmpty(entityType)) {

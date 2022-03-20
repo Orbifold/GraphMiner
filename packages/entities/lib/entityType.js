@@ -194,7 +194,7 @@ class EntityType extends EntityBase {
             return instance
         } else if (_.isString(instanceSpec)) {
             instance = new Entity(this, instanceSpec)
-        } else if (_.isPrototypeOf(instanceSpec)) {
+        } else if (_.isPlainObject(instanceSpec)) {
             instance = Entity.fromJSON(this, instanceSpec)
         } else {
             throw new Error("Not sure how to create a detached instance from the given object.")

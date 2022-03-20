@@ -179,7 +179,10 @@ class LocalEntityStore extends EntityStore {
     }
 
     async removeInstance(id) {
-        this.storage.remove({id}, EntityCollectionName);
+        if(Utils.isEmpty(id)){
+            return
+        }
+        this.storage.removeWhere({id}, EntityCollectionName);
     }
 
     async removeInstances(entityTypeName) {
