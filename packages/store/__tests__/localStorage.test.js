@@ -57,7 +57,7 @@ describe("LocalStorage", function () {
         await storage.update({x: 5}, "uvw", {x: 4});
         let doc = await storage.findOne({x: 5}, "uvw");
         expect(doc).toBeDefined();
-        console.log(doc);
+        // console.log(doc);
     });
 
     it("should find one", async function () {
@@ -70,7 +70,7 @@ describe("LocalStorage", function () {
         expect(doc).toBeNull();
         doc = await storage.findOne({x: 4, y: 5}, "uvw");
         expect(doc).not.toBeNull();
-        console.log(doc);
+        // console.log(doc);
     });
 
     it("should find things", async function () {
@@ -101,28 +101,29 @@ describe("LocalStorage", function () {
         await new Promise((r) => setTimeout(r, 500));
     }, 10000);
 
-    it("loki should autoload the database", async function () {
-        function onLoaded() {
-            let coll = db.getCollection("people");
-            if (_.isNil(coll)) {
-                coll = db.addCollection("people");
-                console.log("Added the collection.");
-            }
-            coll.insert({id: Date.now()}, "people");
-            console.log(coll.count());
-            db.save();
-            db.close();
-        }
-
-        const homeDir = require("os").homedir();
-        const db = new loki(path.join(homeDir, ".graphminer", "localStorage.json"), {
-            autosave: true,
-            autosaveInterval: 1000,
-            autoload: true,
-            autoloadCallback: onLoaded,
-        });
-        await new Promise((r) => setTimeout(r, 1000));
-    }, 10000);
+    // it("loki should autoload the database", async function () {
+    //     function onLoaded() {
+    //         let coll = db.getCollection("people");
+    //         if (_.isNil(coll)) {
+    //             coll = db.addCollection("people");
+    //             console.log("Added the collection.");
+    //         }
+    //         coll.insert({id: Date.now()}, "people");
+    //         console.log(coll.count());
+    //         db.save();
+    //         db.close();
+    //     }
+    //
+    //     const homeDir = require("os").homedir();
+    //     const db = new loki(path.join(homeDir, ".graphminer", "localStorage.json"), {
+    //         autosave: true,
+    //         autosaveInterval: 1000,
+    //         autoload: true,
+    //         autoloadCallback: onLoaded,
+    //     });
+    //     await new Promise((r) => setTimeout(r, 1000));
+    //
+    // }, 10000);
 
     it("should fall back to a GraphMiner storage", async function () {
         let storage = new LocalStorage();
@@ -172,5 +173,17 @@ describe("LocalStorage", function () {
         let items = await storage.find({}, "Items", null, amount)
         expect(items.length).toEqual(amount)
         console.log(`Expect ${amount} items:`, items)
+    });
+    it("should get distinct elements", async function () {
+        const storage = await LocalStorage.inMemory();
+        for (let i = 0; i < 100; i++) {
+            await storage.insert({id: i, name: "Item " + i}, "Items")
+            await storage.insert({id: i, name: "Item " + i}, "Items")
+        }
+        let items = await storage.find({}, "Items")
+        expect(items.length).toEqual(200)
+        let uniq = await storage.distinct({},"name","Items")
+        expect(uniq.length).toEqual(100)
+
     });
 });

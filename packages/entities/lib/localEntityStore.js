@@ -244,6 +244,12 @@ class LocalEntityStore extends EntityStore {
     }
 
     async getInstanceById(id) {
+        if(Utils.isEmpty(id)){
+            throw new Error(Strings.IsNil("id","LocalEntityStore.getInstanceById"))
+        }
+        if(!_.isString(id)){
+            throw new Error(Strings.ShoudBeType("id","string", "LocalEntityStore.getInstanceById"))
+        }
         return await this.storage.findOne({id}, EntityCollectionName);
     }
 

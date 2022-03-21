@@ -8,9 +8,9 @@
 module.exports = function (wallaby) {
     return {
         tests: [
-            {"pattern": "packages/utils/__tests__/*.test.js", "ignore": true},
+            {"pattern": "packages/utils/__tests__/*.test.js", "ignore": false},
             {"pattern": "packages/store/__tests__/*.test.js", "ignore": true},
-            {"pattern": "packages/entities/__tests__/entityType.test.js", "ignore": false}
+            {"pattern": "packages/entities/__tests__/*.test.js", "ignore": false}
         ]
     }
 }

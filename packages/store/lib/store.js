@@ -1,4 +1,5 @@
 const {Strings, Utils} = require("@graphminer/utils");
+// /ignore file coverage/
 
 /*
  * Base class for storage implementations.

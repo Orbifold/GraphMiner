@@ -9,7 +9,7 @@ describe("DateString", function () {
 		expect(plus2).toEqual("06/16/20");
 		const minus2 = DateString.getDateOffset(date, -2);
 		expect(minus2).toEqual("06/12/20");
-		const plus2Months = DateString.getDateOffset("01/01/16", 2, "M"); //?
+		const plus2Months = DateString.getDateOffset("01/01/16", 2, "M");
 		expect(plus2Months).toEqual("03/01/16");
 		expect(DateString.getDateOffset(null)).toEqual(null);
 		expect(DateString.getDateOffset("")).toEqual(null);
@@ -30,8 +30,8 @@ describe("DateString", function () {
 	});
 
 	it("should turn simple dates to numbers", function () {
-		const num = DateString.simpleStringDateToNumber("09/06/68"); //?
-		expect(num).toEqual(new Date("09/06/68").getTime()); //?
+		const num = DateString.simpleStringDateToNumber("09/06/68");
+		expect(num).toEqual(new Date("09/06/68").getTime());
 	});
 	it("should test for valid string", function () {
 		expect(DateString.isValidDateString("1/2/33")).toBeTruthy();
@@ -46,7 +46,5 @@ describe("DateString", function () {
 		expect(DateString.isValidDateString(DateString.makeDate("1627281485796"))).toBeTruthy();
 		expect(DateString.isValidDateString(DateString.makeDate(0))).toBeTruthy();
 	});
-	it("should ", function () {
-		console.log(DateString.getDateFromSimpleDate("11/05/20"));
-	});
+
 });

@@ -59,6 +59,7 @@ describe("EntityTypes", function () {
         expect(selfie.space).toEqual(space)
         // remove the type and the related instance
         await space.removeEntityType("Image", true)
+
         expect(await space.instanceExists(selfie.id)).toBeFalsy()
         expect(await space.entityTypeExists("Image")).toBeFalsy();
     });

@@ -44,7 +44,7 @@ class Dates {
                 return null;
             }
             // number as a string?
-            const num = _.toNumber(obj.trim()); //?
+            const num = _.toNumber(obj.trim());
             if (!_.isNaN(num)) {
                 if (num < 0) {
                     return null;
@@ -134,7 +134,7 @@ class Dates {
             return false;
         } else if (_.isString(obj)) {
             // number as a string?
-            const num = _.toNumber(obj.trim()); //?
+            const num = _.toNumber(obj.trim());
             if (!_.isNaN(num)) {
                 console.log(num);
                 if (num < 0) {

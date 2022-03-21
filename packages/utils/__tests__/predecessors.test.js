@@ -49,7 +49,7 @@ describe("Durations", function () {
         }
     });
     it("should parse arrays", function () {
-        const found = parsePredecessors("11+2w, 11-2m"); //?
+        const found = parsePredecessors("11+2w, 11-2m");
         expect(found.length).toEqual(2);
         expect(found[0]).toEqual(new Predecessor(11, null, "2w"));
         expect(found[1]).toEqual(new Predecessor(11, null, "-2m"));

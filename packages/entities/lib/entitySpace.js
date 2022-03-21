@@ -129,6 +129,30 @@ class EntitySpace {
     }
 
     /**
+     *
+     * @param typeName
+     * @param instanceSpec
+     * @returns {Entity}
+     */
+    static createInstanceFromSpecs(typeName, instanceSpec) {
+        let entity = null
+        if (instanceSpec instanceof Entity) {
+            entity = instanceSpec
+        } else if (_.isPlainObject(instanceSpec)) {
+
+            entity = new Entity(null, instanceSpec.name || null)
+        } else if (_.isString(instanceSpec)) {
+            entity = new Entity(null, instanceSpec)
+        } else {
+            throw new Error("Don't know how to turn given data into an instance.")
+        }
+        entity.typeName = typeName
+        entity.id = instanceSpec.id || Utils.id()
+        return entity;
+
+    }
+
+    /**
      * Initializes this entity manager.
      *
      * - no parameter: this will create an in-memory store
@@ -203,10 +227,12 @@ class EntitySpace {
      * @returns {Promise<EntityType>}
      */
     async addEntityType(options) {
+
         if (_.isString(options)) {
             const entityTypeName = options.toString().trim();
             const entityType = new EntityType(entityTypeName);
-            return await this.addEntityType(entityType);
+            await this.addEntityType(entityType);
+            return entityType
         } else if (options instanceof EntityType) {
             const entityType = options;
             // upsert will overwrite but adding it causes an exception if already there
@@ -262,19 +288,24 @@ class EntitySpace {
      * - This will raise an error if an instance with the same id already exists. To update one, use the {@link upsertInstance} method.
      * @see upsertInstance
      * @param entityTypeSpec {string|EntityType} An entity type or type name.
-     * @param instanceSpec {string|*} If a string is given this will be the name of the instance. If data is supplied it will be assigned to the instance.
+     * @param entitySpec {string|*} If a string is given this will be the name of the instance. If data is supplied it will be assigned to the instance.
      * @returns {Promise<Entity>}
      */
-    async createInstance(entityTypeSpec, instanceSpec) {
-        const entityType = await this.getEntityType(entityTypeSpec);
-        if (Utils.isEmpty(entityType)) {
-            throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name))
+    async createInstance(entityTypeSpec, entitySpec) {
+        const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec)
+        const entity = await this.createDetachedInstance(entityTypeSpec, entitySpec)
+        if(this.enforceSchema){
+            const exists = await this.getEntityType(entityTypeName)
+            if(!exists){
+                throw new Error(Strings.TypeDoesNotExist(entityTypeName))
+            }
         }
-        if (Utils.isEmpty(instanceSpec)) {
-            throw new Error(Strings.IsNil("instanceSpec", "EntitySpace.createInstance"))
-        }
-        const entity = await entityType.createDetachedInstance(instanceSpec);
         if (entity) {
+            // difference between create and upsert is the error if already present
+            const exists = await this.instanceExists(entity.id)
+            if (exists) {
+                throw new Error(`An instance with id '${entity.id}' already exists.`)
+            }
             await this.store.upsertInstance(entity)
             entity.space = this;
             return entity;
@@ -436,7 +467,7 @@ class EntitySpace {
      * Clears the space of entity types and instances.
      * @returns {Promise<void>}
      */
-    async clear(){
+    async clear() {
         this.ensureStoreMethodExists("clear");
         await this.store.clear()
     }
@@ -446,86 +477,84 @@ class EntitySpace {
      *
      * @see addInstance
      * @param entityTypeSpec {string|EntityType} The entity type or type name.
-     * @param instanceSpec {*|string} The entity, the entity data or just the name of the instance.
+     * @param entitySpec {*|string} The entity, the entity data or just the name of the instance.
      * @returns {Promise<Entity>}
      */
-    async upsertInstance(entityTypeSpec, instanceSpec) {
-        if (Utils.isEmpty(entityTypeSpec)) {
-            throw new Error(Strings.IsNil("entityTypeSpec", "EntitySpace.upsertInstance"))
+    async upsertInstance(entityTypeSpec, entitySpec) {
+        // const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec)
+        // if (Utils.isEmpty(entityTypeSpec)) {
+        //     throw new Error(Strings.IsNil("entityTypeSpec", "EntitySpace.upsertInstance"))
+        // }
+        // if (Utils.isEmpty(instanceSpec)) {
+        //     throw new Error(Strings.IsNil("instanceSpec", "EntitySpace.upsertInstance"))
+        // }
+        // if (this.enforceSchema) {
+        //     const entityType = await this.getEntityType(entityTypeSpec);
+        //     if (Utils.isEmpty(entityType)) {
+        //         throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name))
+        //     }
+        //     const instance = EntitySpace.createInstanceFromSpecs(entityType.name, instanceSpec)
+        //     const data = instance.toJSON()
+        //     await this.store.upsertInstance(entityType, data);
+        // } else {
+        //     Entity.untyped()
+        //     // free insert of the instance
+        //     let entityTypeName
+        //     if (_.isString(entityTypeSpec)) {
+        //         entityTypeName = entityTypeSpec
+        //     } else if ((entityTypeSpec instanceof EntityType) || _.isPlainObject(entityTypeSpec)) {
+        //         entityTypeName = entityTypeSpec.name
+        //     } else {
+        //         throw new Error(Strings.WrongArgument("entityTypeSpec", typeof entityTypeSpec, "EntityType or string", "EntitySpace.upsertInstance"))
+        //     }
+        //     if (Utils.isEmpty(entityTypeName)) {
+        //         throw new Error(Strings.IsNil("entityTypeSpec", "EntitySpace.upsertInstance"))
+        //     }
+        //     const instance = EntitySpace.createInstanceFromSpecs(entityTypeName, instanceSpec)
+        //     const data = instance.toJSON()
+        //     // push it into the store
+        //     await this.store.upsertInstance(entityTypeName, data);
+        //     // don't specify the type here since it will be checked
+        //     const entity = new Entity(null, data.name)
+        //     entity.typeName = entityTypeName
+        //     entity.space = this;
+        //     return entity;
+        // }
+        // let instance;
+        // // the instance is defined by a name
+        // if (_.isString(instanceSpec)) {
+        //
+        // }
+        // if (entityTypeSpec instanceof EntityType) {
+        //     entityTypeSpec = entityTypeSpec.name;
+        // }
+        // await this.checkEntityTypeIsInSchema(entityTypeSpec);
+        // const data = await this.mapDataToEntity(entityTypeSpec, instanceSpec);
+        // // if not enforced the type is not added to the EntityTypes collection
+        // // which is necessary for knowing which collections contain entities.
+        // // In the default store you can have various collections unrelated to entities.
+        // if (!this.settings.enforceSchema) {
+        //     const exists = await this.entityTypeExists(entityTypeSpec);
+        //     if (!exists) {
+        //         await this.store.upsertEntityType(new EntityType(entityTypeSpec));
+        //     }
+        // }
+        // await this.store.upsertInstance(entityTypeSpec, data);
+        // return data.id;
+        const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec)
+        const entity = await this.createDetachedInstance(entityTypeSpec, entitySpec)
+        if(this.enforceSchema){
+            const exists = await this.getEntityType(entityTypeName)
+            if(!exists){
+                throw new Error(Strings.TypeDoesNotExist(entityTypeName))
+            }
         }
-        if (Utils.isEmpty(instanceSpec)) {
-            throw new Error(Strings.IsNil("instanceSpec", "EntitySpace.upsertInstance"))
-        }
-        if (this.enforceSchema) {
-            const entityType = await this.getEntityType(entityTypeSpec);
-            if (Utils.isEmpty(entityType)) {
-                throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name))
-            }
-            let data = instanceSpec
-            if (instanceSpec instanceof Entity) {
-                data = instanceSpec.toJSON()
-            } else if (_.isPlainObject(instanceSpec)) {
-                data = instanceSpec
-            } else if (_.isString(instanceSpec)) {
-                data = {
-                    name: instanceSpec
-                }
-            }
-            if (Utils.isEmpty(data.id)) {
-                data.id = Utils.id()
-            }
-            data.typeName = entityType.name
-            await this.store.upsertInstance(entityType, data);
-        } else {
-            // free insert of the instance
-            let entityTypeName
-            if (_.isString(entityTypeSpec)) {
-                entityTypeName = entityTypeSpec
-            } else if ((entityTypeSpec instanceof EntityType) || _.isPlainObject(entityTypeSpec)) {
-                entityTypeName = entityTypeSpec.name
-            } else {
-                throw new Error(Strings.WrongArgument("entityTypeSpec", typeof entityTypeSpec, "EntityType or string", "EntitySpace.upsertInstance"))
-            }
-            if (Utils.isEmpty(entityTypeName)) {
-                throw new Error(Strings.IsNil("entityTypeSpec", "EntitySpace.upsertInstance"))
-            }
-            let data = instanceSpec
-            if (instanceSpec instanceof Entity) {
-                data = instanceSpec.toJSON()
-            }
-            if (Utils.isEmpty(data.id)) {
-                data.id = Utils.id()
-            }
-            data.typeName = entityTypeName
-            // push it into the store
-            await this.store.upsertInstance(entityTypeName, data);
-            // don't specify the type here since it will be checked
-            const entity = new Entity(null, data.name)
-            entity.typeName = entityTypeName
+        if (entity) {
+            await this.store.upsertInstance(entity)
             entity.space = this;
             return entity;
         }
-        let instance;
-        // the instance is defined by a name
-        if (_.isString(instanceSpec)) {
-
-        }
-        if (entityTypeSpec instanceof EntityType) {
-            entityTypeSpec = entityTypeSpec.name;
-        }
-        await this.checkEntityTypeIsInSchema(entityTypeSpec);
-        const data = await this.mapDataToEntity(entityTypeSpec, instanceSpec);
-        // if not enforced the type is not added to the EntityTypes collection
-        // which is necessary for knowing which collections contain entities.
-        // In the default store you can have various collections unrelated to entities.
-        if (!this.settings.enforceSchema) {
-            const exists = await this.entityTypeExists(entityTypeSpec);
-            if (!exists) {
-                await this.store.upsertEntityType(new EntityType(entityTypeSpec));
-            }
-        }
-        await this.store.upsertInstance(entityTypeSpec, data);
-        return data.id;
+        return null;
     }
 
     async mapDataToEntity(entityTypeName, instanceData) {
@@ -595,7 +624,12 @@ class EntitySpace {
         const typeName = found.typeName;
         if (this.enforceSchema) {
             const entityType = await this.getEntityType(typeName);
-            return Entity.fromJSON(entityType, found);
+            // happens if the type has been removed but not the instance
+            if(Utils.isEmpty(entityType)){
+                return Entity.untyped(typeName, found)
+            }else{
+                return Entity.fromJSON(entityType, found);
+            }
         } else {
             const entity = new Entity(null, null)
             _.assign(entity, found)
@@ -614,6 +648,73 @@ class EntitySpace {
         }
         const found = await this.store.getInstances(typeName);
         return found.map((e) => Entity.fromJSON(entityType, e));
+    }
+
+    /**
+     * Tries to make sense of the given data to get an entity type.
+     * @param entityTypeSpec {*|string|EntityType} A type name, a type or a serialized type.
+     * @param throwError {boolean} Throw if the specs can't be interpreted into an entity type name.
+     * @returns {string|null}
+     */
+    #getEntityTypeNameFromSpecs(entityTypeSpec, throwError = true) {
+        if (Utils.isEmpty(entityTypeSpec)) {
+            if (throwError) {
+                throw new Error("Can't turn the given entity type specification into an entity type.")
+            }
+            return null;
+        } else if (entityTypeSpec instanceof EntityType) {
+            return entityTypeSpec.name
+        } else if (_.isString(entityTypeSpec)) {
+            return entityTypeSpec
+        } else if (_.isPlainObject(entityTypeSpec)) {
+            return entityTypeSpec.typeName !== "EntityType" ? null : entityTypeSpec.name;
+        } else {
+            if (throwError) {
+                throw new Error("Can't turn the given entity type specification into an entity type.")
+            }
+            return null;
+        }
+    }
+
+    #detachEntity(entity) {
+        if (Utils.isEmpty(entity)) {
+            return;
+        }
+        if (entity instanceof Entity) {
+            entity.space = null;
+            if (entity.entityType) {
+                entity.entityType.space = null
+            }
+        }
+    }
+
+    /**
+     * Creates an instance from the given specifications without saving it to the store.
+     * @param entityTypeSpec
+     * @param entitySpec
+     * @param throwError
+     * @returns {Promise<Entity>}
+     */
+    async createDetachedInstance(entityTypeSpec, entitySpec, throwError = true) {
+        // if already an entity we just detach it
+        if (entitySpec instanceof Entity) {
+            this.#detachEntity(entitySpec)
+            return entitySpec
+        }
+        const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec, throwError)
+        let entity;
+        if (this.enforceSchema) {
+            const entityType = await this.getEntityType(entityTypeName);
+            if (Utils.isEmpty(entityType)) {
+                throw new Error(Strings.TypeDoesNotExist(entityTypeName))
+            }
+            entity = Entity.typed(entityType, entitySpec)
+        } else {
+            entity = Entity.untyped(entityTypeName, entitySpec)
+        }
+        entity.space = null;
+        this.#detachEntity(entity)
+        return entity
     }
 
     /**
@@ -685,8 +786,8 @@ class EntitySpace {
             await this.store.removeInstance(entitySpec)
         } else if ((entitySpec instanceof Entity) || _.isPlainObject(entitySpec)) {
             await this.store.removeInstance(entitySpec.id)
-        }else{
-            throw new Error(Strings.WrongArgument("entitySpec",typeof entitySpec,"id or entity", "EntitySpace.removeInstance"))
+        } else {
+            throw new Error(Strings.WrongArgument("entitySpec", typeof entitySpec, "id or entity", "EntitySpace.removeInstance"))
         }
     }
 

@@ -1,6 +1,6 @@
 const _ = require("lodash");
 const {Strings, Utils} = require("@graphminer/utils");
-
+// /ignore file coverage/
 /*
  * Base class for storage implementations.
  * See the LocalEntityStore for the default one.
