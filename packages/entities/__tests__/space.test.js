@@ -72,6 +72,24 @@ describe("Entities", function () {
         space = await EntitySpace.inMemory()
         space.enforceSchema = true
 
+        // same statement as above but this time raises an error
+        let hasThrown = false
+        try {
+            await space.createDetachedInstance("Car", "A")
+        } catch (e) {
+            hasThrown = true
+        }
+        expect(hasThrown).toBeTruthy()
+        Car = await space.addEntityType("Car")
+        car = await space.createDetachedInstance("Car", "A")
+
+        expect(car.typeName).toEqual("Car")
+        expect(car.name).toEqual("A")
+        expect(car.space).toBeNull()
+        expect(car.id).not.toBeNull()
+        expect(await space.countEntityTypes()).toEqual(1)
+        // the instance is not in the space since it's detached
+        expect(await space.countEntities()).toEqual(0)
     });
     it("should use the options", async function () {
         let space = new EntitySpace();
