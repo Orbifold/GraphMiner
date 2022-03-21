@@ -1,4 +1,5 @@
 const ValueProperty = require("../lib/ValueProperty");
+const EntitySpace = require("../lib/entitySpace");
 
 describe("ValueProperty", function () {
 	it("should validate json", function () {
@@ -69,5 +70,14 @@ describe("ValueProperty", function () {
 		}).toThrow(Error);
 		prop.valueType = "[Number]";
 		expect(prop.valueType).toBe("[Number]");
+	});
+	it("should fetch the value properties", async function () {
+		const space = await EntitySpace.inMemory();
+		const Car = await space.addEntityType("Car");
+		await space.addValueProperty("Car", "speed", "number");
+
+		const props = await space.getValueProperties("Car");
+		expect(props.length).toEqual(1);
+		expect(props[0].name).toEqual("speed");
 	});
 });
