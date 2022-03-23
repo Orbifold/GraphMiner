@@ -4,6 +4,7 @@ const EntityType = require("./entityType");
 const Entity = require("./entity");
 const ValueProperty = require("./valueProperty");
 const ObjectProperty = require("./objectProperty");
+const SpaceUtils = require("./utils");
 
 /**
  * Gateway to entities.
@@ -144,23 +145,6 @@ class EntitySpace {
 	}
 
 	/**
-	 * Deserializes the type coming from the store.
-	 * @param json {*} Supposedly a serialized EntityType.
-	 * @returns {null|EntityType}
-	 */
-	#deserializeEntityType(json) {
-		if (Utils.isEmpty(json)) {
-			return null;
-		}
-		if (json.typeName !== "EntityType") {
-			return null;
-		}
-		const entityType = EntityType.fromJSON(json);
-		entityType.space = this;
-		return entityType;
-	}
-
-	/**
 	 * Turns the given set of JSON into EntityType instances.
 	 * @param jsonArray {*[]} Supposedly an array of serialized EntityType.
 	 * @returns {*[]|*}
@@ -169,7 +153,7 @@ class EntitySpace {
 		if (Utils.isEmpty(jsonArray)) {
 			return [];
 		}
-		return jsonArray.map((u) => this.#deserializeEntityType(u)).filter((u) => !_.isNil(u));
+		return jsonArray.map((u) => SpaceUtils.deserializeEntityType(u, this)).filter((u) => !_.isNil(u));
 	}
 
 	/**
@@ -275,7 +259,7 @@ class EntitySpace {
 	 * @param entityTypeSpec {EntityType|string} The name of a type or an EntityType.
 	 * @param valuePropertyName {string} The name of the value property.
 	 * @param valueType {string} The type of the value.
-	 * @returns {Promise<void>}
+	 * @returns {Promise<ValueProperty>}
 	 * @example
 	 *
 	 * personType.addValueType("Person", "age", "Number);
@@ -295,6 +279,7 @@ class EntitySpace {
 		const prop = new ValueProperty(valuePropertyName, valueType, entityType.name);
 		entityType.addValueProperty(prop);
 		await this.updateEntityType(entityType);
+		return prop;
 	}
 
 	async addObjectProperty(entityTypeSpec, objectPropertyName, objectTypeSpec) {
@@ -550,8 +535,8 @@ class EntitySpace {
 
 	/**
 	 * Returns the value properties of the specified type.
-	 * @param entityTypeSpec
-	 * @returns {Promise<*[]|*>}
+	 * @param entityTypeSpec {*|string|EntityType} An entity specification.
+	 * @returns {Promise<ValueProperty>}
 	 */
 	async getValueProperties(entityTypeSpec) {
 		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
@@ -568,18 +553,40 @@ class EntitySpace {
 	}
 
 	/**
-	 * Sets the value of a property.
+	 * Returns the value of (value) property.
+	 * @param entitySpec {Entity|string|*} An instance, an instance id or a serialized instance.
+	 * @param valueSpec {ValueProperty|string|*} A value property, a name or a serialized value property.
+	 * @returns {Promise<*>}
+	 */
+	async getValue(entitySpec, valueSpec) {
+		const valueName = SpaceUtils.getValueNameFromSpecs(valueSpec);
+		if (Utils.isEmpty(valueName)) {
+			throw new Error("Can't turn the given specs into a value property.");
+		}
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+		if (Utils.isEmpty(entity)) {
+			throw new Error("The entity was not found in the space.");
+		}
+		return entity.getValue(valueName);
+	}
+
+	/**
+	 * Sets a (property) value on an instance.
 	 * @param entitySpec {*|string|Entity} An entity, an id or a serialized entity.
 	 * @param valueSpec {*|string|ValueProperty} A value property, a property name or a serialized value property.
 	 * @param value {*} The value to set.
 	 * @returns {Promise<void>}
 	 */
-	async setValueProperty(entitySpec, valueSpec, value) {
-		const valueName = this.#getValueNameFromSpecs(valueSpec);
+	async setValue(entitySpec, valueSpec, value) {
+		const valueName = SpaceUtils.getValueNameFromSpecs(valueSpec);
 		if (Utils.isEmpty(valueName)) {
 			throw new Error("Can't turn the given specs into a value property.");
 		}
-		const entityId = this.#getEntityIdFromSpecs(entitySpec);
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
 		if (Utils.isEmpty(entityId)) {
 			throw new Error("Can't turn the given entity specs into an entity id.");
 		}
@@ -595,6 +602,29 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Set the object property on the given instance.
+	 * - This creates a link with another instance.
+	 * - You can also use the {@link connect} method to link to instances.
+	 * @see connect
+	 * @param entitySpec
+	 * @param objectSpec
+	 * @param obj
+	 * @returns {Promise<void>}
+	 */
+	async setObject(entitySpec, objectSpec, obj) {
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+	}
+
+	/**
+	 * Returns the object properties of the given type.
+	 * @param entityTypeSpec {EntityType|string|*} An EntityType, a name or a serialized type.
+	 * @returns {Promise<ObjectProperty>}
+	 */
 	async getObjectProperties(entityTypeSpec) {
 		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
 		const entityType = await this.getEntityType(entityTypeName);
@@ -679,48 +709,6 @@ class EntitySpace {
 		}
 	}
 
-	#getValueNameFromSpecs(valueSpec) {
-		if (Utils.isEmpty(valueSpec)) {
-			return null;
-		}
-		if (_.isString(valueSpec)) {
-			return valueSpec;
-		} else if (valueSpec instanceof ValueProperty) {
-			return valueSpec.name || null;
-		} else if (_.isPlainObject(valueSpec)) {
-			return valueSpec.name || null;
-		} else {
-			return null;
-		}
-	}
-
-	#getEntityIdFromSpecs(entitySpec) {
-		if (Utils.isEmpty(entitySpec)) {
-			return null;
-		}
-		if (_.isString(entitySpec)) {
-			return entitySpec;
-		} else if (entitySpec instanceof Entity) {
-			return entitySpec.id || null;
-		} else if (_.isPlainObject(entitySpec)) {
-			return entitySpec.id || null;
-		} else {
-			return null;
-		}
-	}
-
-	#detachEntity(entity) {
-		if (Utils.isEmpty(entity)) {
-			return;
-		}
-		if (entity instanceof Entity) {
-			entity.space = null;
-			if (entity.entityType) {
-				entity.entityType.space = null;
-			}
-		}
-	}
-
 	/**
 	 * Creates an instance from the given specifications without saving it to the store.
 	 * @param entityTypeSpec
@@ -731,7 +719,7 @@ class EntitySpace {
 	async createDetachedInstance(entityTypeSpec, entitySpec, throwError = true) {
 		// if already an entity we just detach it
 		if (entitySpec instanceof Entity) {
-			this.#detachEntity(entitySpec);
+			SpaceUtils.detachEntity(entitySpec);
 			return entitySpec;
 		}
 		const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec, throwError);
@@ -747,7 +735,7 @@ class EntitySpace {
 			entity = await Entity.untyped(entityTypeName, entitySpec, false);
 		}
 		entity.space = null;
-		this.#detachEntity(entity);
+		SpaceUtils.detachEntity(entity);
 		return entity;
 	}
 
@@ -765,7 +753,7 @@ class EntitySpace {
 		} else if (_.isString(entityTypeSpec)) {
 			this.ensureStoreMethodExists("getEntityType");
 			const json = await this.store.getEntityType(entityTypeSpec);
-			return this.#deserializeEntityType(json);
+			return SpaceUtils.deserializeEntityType(json, this);
 		} else if (_.isPlainObject(entityTypeSpec)) {
 			if (entityTypeSpec.typeName !== "EntityType") {
 				return null;
@@ -793,7 +781,7 @@ class EntitySpace {
 			throw new Error(Strings.ShoudBeType("id", "string", "EntitySpace.getEntityTypeById"));
 		}
 		const json = await this.store.getEntityTypeById(id);
-		return this.#deserializeEntityType(json);
+		return SpaceUtils.deserializeEntityType(json, this);
 	}
 
 	/**
@@ -884,7 +872,7 @@ class EntitySpace {
 			this.ensureStoreMethodExists("clear");
 			await this.store.clear(true, false);
 		}
-		this.#validateSchema(json);
+		SpaceUtils.validateSchema(json);
 
 		for (const entityType of json) {
 			await this.store.upsertEntityType(entityType);
@@ -952,59 +940,12 @@ class EntitySpace {
 		}
 	}
 
-	/**
-	 * Validates the given schema for import.
-	 * Things like id, name, description are optional and the typeName of the elements will be inserted if missing.
-	 * @param json {*} The schema array.
-	 */
-	#validateSchema(json) {
-		const entityTypes = json.map((e) => e.name);
-		for (const entityType of json) {
-			if (entityType.typeName !== "EntityType") {
-				throw new Error(`Schema error: there is an object that isn't an EntityType (found: ${entityType.typeName || "nil"}).`);
-			}
-			if (Utils.isEmpty(entityType.name)) {
-				throw new Error("Schema error: there is an entity type without a name.");
-			}
-			if (Utils.isEmpty(entityType.id)) {
-				// throw new Error("Schema error: there is an entity type without an id.");
-				entityType.id = Utils.id();
-			}
-			if (entityType.objectProperties) {
-				for (const prop of entityType.objectProperties) {
-					if (!_.includes(entityTypes, prop.objectType)) {
-						throw new Error(Strings.InvalidSchemaType(prop.objectType, prop.name, entityType.name));
-					}
-					if (Utils.isEmpty(prop.name)) {
-						throw new Error(`Schema error: an object property of '${entityType.name}' does not have a name.`);
-					}
-					if (Utils.isEmpty(prop.id)) {
-						throw new Error(`Schema error: an object property of '${entityType.name}' does not have an id.`);
-					}
-				}
-			}
-			if (entityType.valueProperties) {
-				for (const prop of entityType.valueProperties) {
-					if (!ValueProperty.isValueType(prop.valueType)) {
-						throw new Error(Strings.InvalidSchemaType(prop.valueType, prop.name, entityType.name));
-					}
-					if (Utils.isEmpty(prop.name)) {
-						throw new Error(`Schema error: a value property of '${entityType.name}' does not have a name.`);
-					}
-					if (Utils.isEmpty(prop.id)) {
-						throw new Error(`Schema error: a value property of '${entityType.name}' does not have an id.`);
-					}
-				}
-			}
-		}
-	}
-
 	async connect(source, relationSpec, target) {
-		const sourceId = this.#getEntityIdFromSpecs(source);
+		const sourceId = SpaceUtils.getEntityIdFromSpecs(source);
 		if (_.isNil(sourceId)) {
 			throw new Error("Could not turn 'source' into an instance id.");
 		}
-		const targetId = this.#getEntityIdFromSpecs(target);
+		const targetId = SpaceUtils.getEntityIdFromSpecs(target);
 		if (_.isNil(targetId)) {
 			throw new Error("Could not turn 'target' into an instance id.");
 		}

@@ -1,9 +1,7 @@
 const { Utils, Strings } = require("@graphminer/Utils");
-
 const EntityBase = require("./entityBase");
-
 const _ = require("lodash");
-const ObjectProperty = require("./objectProperty");
+const SpaceUtils = require("./utils");
 
 /**
  * Entity or **instance** defines a concrete piece of data based on a predefined type.
@@ -22,6 +20,22 @@ class Entity extends EntityBase {
 	 */
 	objects;
 	space;
+
+	/**
+	 * An untyped entity has no schema, i.e. an {@link entityType}.
+	 * @returns {boolean}
+	 */
+	get isUntyped() {
+		return _.isNil(this.entityType);
+	}
+
+	/**
+	 * A typed entity has an {@link entityType}
+	 * @returns {boolean}
+	 */
+	get isTyped() {
+		return !this.isUntyped;
+	}
 
 	/**
 	 * You likely should not create an instance via this constructor,
@@ -112,22 +126,6 @@ class Entity extends EntityBase {
 	}
 
 	/**
-	 * An untyped entity has no schema, i.e. an {@link entityType}.
-	 * @returns {boolean}
-	 */
-	get isUntyped() {
-		return _.isNil(this.entityType);
-	}
-
-	/**
-	 * A typed entity has an {@link entityType}
-	 * @returns {boolean}
-	 */
-	get isTyped() {
-		return !this.isUntyped;
-	}
-
-	/**
 	 * Deserializes an entity.
 	 * @param entityType {EntityType} An entity type.
 	 * @param json {*} The data to deserialize.
@@ -178,7 +176,7 @@ class Entity extends EntityBase {
 
 	/**
 	 * Gets the value of the specified value property
-	 * @param options {string|ValueProperty}
+	 * @param valuePropSpec {string|ValueProperty} The value property or name.
 	 * @returns {*}
 	 * @example
 	 *
@@ -188,10 +186,10 @@ class Entity extends EntityBase {
 	 * person.setValue("age", 34);
 	 * person.getValue("age");
 	 */
-	getValue(options) {
+	getValue(valuePropSpec) {
 		const ValueProperty = require("./valueProperty");
-		if (_.isString(options)) {
-			const valuePropertyName = options;
+		if (_.isString(valuePropSpec)) {
+			const valuePropertyName = valuePropSpec;
 			if (_.includes(["id", "name", "description"], valuePropertyName)) {
 				return this[valuePropertyName];
 			}
@@ -203,8 +201,8 @@ class Entity extends EntityBase {
 					return this.values[valuePropertyName];
 				}
 			}
-		} else if (options instanceof ValueProperty) {
-			const valuePropertyName = options.name;
+		} else if (valuePropSpec instanceof ValueProperty) {
+			const valuePropertyName = valuePropSpec.name;
 			if (_.includes(["id", "name", "description"], valuePropertyName)) {
 				return this[valuePropertyName];
 			}
@@ -220,15 +218,28 @@ class Entity extends EntityBase {
 	}
 
 	/**
+	 * Returns all values of this instance.
+	 * @returns {*}
+	 */
+	getValues() {
+		const def = {
+			id: this.id,
+			name: this.name,
+			description: this.description,
+		};
+		return _.assign(def, this.values);
+	}
+
+	/**
 	 * Sets the value of the property.
 	 * Note that the type is validated.
 	 * @param valuePropertyName {string} The name of the property.
 	 * @param value {*} The value to set.
 	 * @param throwError {boolean} Throw an error if the property does not exist.
-	 * @param save
+	 * @param save {boolean} Whether to save the instance after setting the value.
 	 */
 	async setValue(valuePropertyName, value, throwError = true, save = true) {
-		this.#isValidUntypedValue(value);
+		SpaceUtils.isValidValue(value);
 		if (this.isUntyped) {
 			if (_.includes(["id", "name", "description"], valuePropertyName)) {
 				this[valuePropertyName] = value;
@@ -257,12 +268,16 @@ class Entity extends EntityBase {
 	 * @returns {Promise<void>}
 	 */
 	async save() {
-		if (this.space) {
-			if (this.isTyped) {
-				await this.space.upsertInstance(this.entityType.name, this);
-			} else {
-				await this.space.upsertInstance(this.typeName, this);
+		try {
+			if (this.space) {
+				if (this.isTyped) {
+					await this.space.upsertInstance(this.entityType.name, this);
+				} else {
+					await this.space.upsertInstance(this.typeName, this);
+				}
 			}
+		} catch (e) {
+			console.warn(e.message);
 		}
 	}
 
@@ -286,7 +301,7 @@ class Entity extends EntityBase {
 						throw new Error("Can only assign a string to id, name or description.");
 					}
 				} else {
-					this.#isValidUntypedValue(v);
+					SpaceUtils.isValidValue(v);
 					this.values[k] = v;
 				}
 			});
@@ -308,26 +323,6 @@ class Entity extends EntityBase {
 		}
 		if (save) {
 			await this.save();
-		}
-	}
-
-	#isValidObject(objectPropertyName, obj) {
-		const definition = this.entityType.getObjectProperty(objectPropertyName);
-		const expectedType = definition.objectType;
-		if (obj.typeName !== expectedType) {
-			throw new Error(Strings.ShoudBeType(objectPropertyName, expectedType, this.typeName));
-		}
-	}
-
-	#isValidUntypedValue(value) {
-		const allowed = [_.isNumber, _.isNil, _.isString, _.isArray, _.isBoolean];
-		if (
-			!_.some(
-				allowed.map((a) => a(value)),
-				(u) => u === true,
-			)
-		) {
-			throw new Error("A value can only be a simple type or nil.");
 		}
 	}
 
@@ -367,48 +362,47 @@ class Entity extends EntityBase {
 			case "boolean":
 				return _.isBoolean;
 			default:
-				throw new Error(strings.Invalid(baseTypeName, "Entity.validateValue"));
+				throw new Error(Strings.Invalid(baseTypeName, "Entity.validateValue"));
 		}
 	}
 
-	setObject(objectPropertyName, obj) {
-		if (this.space) {
-		} else {
-		}
+	async setObject(objectPropertySpec, objSpec, save = true) {
+		const objPropName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
 		if (this.isUntyped) {
-			this.objects[objectPropertyName] = obj;
+			SpaceUtils.isValidObject(objSpec);
+			this.objects[objectPropertySpec] = objSpec;
 		} else {
-			if (this.objectPropertyExists(objectPropertyName)) {
-				this.#isValidObject(objectPropertyName, obj);
-				this.objects[objectPropertyName] = obj;
+			// const entityType = this.entityType
+			const objProperty = this.getObjectProperty(objPropName);
+			SpaceUtils.isValidObject(objSpec, objProperty);
+			if (this.objectPropertyExists(objectPropertySpec)) {
+				SpaceUtils.isValidObject(objectPropertySpec, objSpec);
+				this.objects[objectPropertySpec] = objSpec;
 			} else {
-				throw new Error(Strings.MemberDoesNotExist(objectPropertyName, this.typeName));
+				throw new Error(Strings.MemberDoesNotExist(objectPropertySpec, this.typeName));
 			}
+		}
+		if (save) {
+			await this.save();
 		}
 	}
 
 	/**
 	 * Returns the object  for the given object property.
-	 * @param options  {string|ObjectProperty} The name of the object property or an {@link ObjectProperty}.
+	 * @param objectPropertySpec  {string|ObjectProperty} The name of the object property or an {@link ObjectProperty}.
 	 * @returns {null|*}
 	 */
-	getObject(options) {
+	getObject(objectPropertySpec) {
+		const objName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
 		// todo: have to deal with multiple time the same one
-		if (_.isString(options)) {
-			const objectPropertyName = options.toString().trim();
-			if (this.isUntyped) {
-				return this[objectPropertyName];
-			} else {
-				if (this.objectPropertyExists(objectPropertyName)) {
-					return this.objects[objectPropertyName];
-				}
-			}
-			return null;
-		} else if (options instanceof ObjectProperty) {
-			return this.getObject(options.name);
+		if (this.isUntyped) {
+			return this.objects[objName];
 		} else {
-			throw new Error(Strings.WrongArguments("Entity.getObject"));
+			if (this.objectPropertyExists(objName)) {
+				return this.objects[objName];
+			}
 		}
+		return null;
 	}
 
 	valuePropertyExists(valuePropertyName) {
@@ -427,7 +421,10 @@ class Entity extends EntityBase {
 	 * @returns {ValueProperty}
 	 */
 	getValueProperty(valuePropertyName) {
-		return this.entityType.getValueProperty(valuePropertyName);
+		if (this.isTyped) {
+			return this.entityType.getValueProperty(valuePropertyName);
+		}
+		return null;
 	}
 
 	/**
@@ -438,7 +435,10 @@ class Entity extends EntityBase {
 	 * @returns {ObjectProperty}
 	 */
 	getObjectProperty(objectPropertyName) {
-		return this.entityType.getObjectProperty(objectPropertyName);
+		if (this.isTyped) {
+			return this.entityType.getObjectProperty(objectPropertyName);
+		}
+		return null;
 	}
 
 	toJSON(includeObjects = false) {

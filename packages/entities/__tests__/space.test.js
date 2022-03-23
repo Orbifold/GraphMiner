@@ -135,7 +135,7 @@ describe("Entities", function () {
 		// this will load the content
 		await space.init(dbPath);
 		expect(await space.countEntityTypes()).toEqual(1);
-		await space.getInstances("Book"); //?
+		await space.getInstances("Book");
 		expect(await space.countEntities()).toEqual(1);
 
 		found = await space.getInstanceById(book.id);
@@ -531,10 +531,35 @@ describe("Entities", function () {
 	it("should set a value property", async function () {
 		let space = await EntitySpace.inMemory();
 		await space.addEntityType("Book");
-		await space.addValueProperty("Book", "author", "string");
+		const prop = await space.addValueProperty("Book", "author", "string");
 		const topology = await space.createInstance("Book", "Topology");
-		await space.setValueProperty(topology, "author", "Dugundji");
+		await space.setValue(topology, "author", "Dugundji");
 		const ins = await space.getInstances("Book");
 		expect(ins[0].get("author")).toEqual("Dugundji");
+		expect(ins[0].get(prop)).toEqual("Dugundji");
+		expect(await space.getValue(topology.id, "author")).toEqual("Dugundji");
+
+		const vals = ins[0].getValues();
+		const should = {
+			id: topology.id,
+			name: "Topology",
+			author: "Dugundji",
+			description: null,
+		};
+		expect(vals).toEqual(should);
+	});
+	it("should get/set the object", async function () {
+		const a = await Entity.untyped("A");
+		const b = await Entity.untyped("B", "b");
+		let hasThrown = false;
+		try {
+			await a.setObject("link", "B");
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
+		await a.setObject("link", b);
+		const found = await a.getObject("link");
+		expect(found.name).toEqual("b");
 	});
 });
