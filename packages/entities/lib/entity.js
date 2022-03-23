@@ -1,4 +1,4 @@
-const { Utils, Strings } = require("@graphminer/Utils");
+const {Utils, Strings} = require("@graphminer/Utils");
 const EntityBase = require("./entityBase");
 const _ = require("lodash");
 const SpaceUtils = require("./utils");
@@ -131,7 +131,7 @@ class Entity extends EntityBase {
 	 * @param json {*} The data to deserialize.
 	 * @returns {Entity}
 	 */
-	static fromJSON(entityType, json) {
+	static async fromJSON(entityType, json) {
 		if (Utils.isEmpty(entityType)) {
 			throw new Error(Strings.IsNil("entityType", "Entity.fromJSON"));
 		}
@@ -146,13 +146,22 @@ class Entity extends EntityBase {
 		if (!Utils.isEmpty(json.id)) {
 			e.id = json.id;
 		}
+		// object props first
+		if (json.links) {
+			const links = json.links;
+			// remove it so the value props can be assigned without this
+			delete json.links;
+			for (const link of links) {
+				e.objects[link.name] = link.obj ?? link.id;
+			}
+		}
 		if (Utils.isEmpty(entityType)) {
 			// data can't be checked against the schema
 			e = _.assign(e, json);
 		} else {
 			const props = entityType.valueProperties;
 			for (let p of props) {
-				e.setValue(p.name, json[p.name], false, false);
+				await e.setValue(p.name, json[p.name], false, false);
 			}
 			e.description = json.description;
 			e.name = json.name;
@@ -370,18 +379,40 @@ class Entity extends EntityBase {
 		const objPropName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
 		if (this.isUntyped) {
 			SpaceUtils.isValidObject(objSpec);
-			this.objects[objectPropertySpec] = objSpec;
 		} else {
 			// const entityType = this.entityType
 			const objProperty = this.getObjectProperty(objPropName);
 			SpaceUtils.isValidObject(objSpec, objProperty);
 			if (this.objectPropertyExists(objectPropertySpec)) {
 				SpaceUtils.isValidObject(objectPropertySpec, objSpec);
-				this.objects[objectPropertySpec] = objSpec;
+				this.objects[objPropName] = objSpec.id;
 			} else {
 				throw new Error(Strings.MemberDoesNotExist(objectPropertySpec, this.typeName));
 			}
 		}
+		if (this.space) {
+			this.objects[objPropName] = objSpec.id;
+		} else {
+			this.objects[objPropName] = objSpec;
+		}
+		if (save) {
+			await this.save();
+		}
+	}
+
+	async removeObject(objectPropertySpec, save = true) {
+		const objPropName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
+		if (this.isUntyped) {
+			delete this.objects[objPropName]
+		} else {
+
+			if (this.objectPropertyExists(objectPropertySpec)) {
+				delete this.objects[objPropName]
+			} else {
+				throw new Error(Strings.MemberDoesNotExist(objectPropertySpec, this.typeName));
+			}
+		}
+
 		if (save) {
 			await this.save();
 		}
@@ -392,13 +423,22 @@ class Entity extends EntityBase {
 	 * @param objectPropertySpec  {string|ObjectProperty} The name of the object property or an {@link ObjectProperty}.
 	 * @returns {null|*}
 	 */
-	getObject(objectPropertySpec) {
+	async getObject(objectPropertySpec) {
 		const objName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
 		// todo: have to deal with multiple time the same one
+		let id = null;
+
 		if (this.isUntyped) {
-			return this.objects[objName];
+			id = this.objects[objName];
 		} else {
 			if (this.objectPropertyExists(objName)) {
+				id = this.objects[objName];
+			}
+		}
+		if (Utils.isDefined(id)) {
+			if (this.space) {
+				return await this.space.getInstanceById(id);
+			} else {
 				return this.objects[objName];
 			}
 		}
@@ -406,11 +446,11 @@ class Entity extends EntityBase {
 	}
 
 	valuePropertyExists(valuePropertyName) {
-		return !Utils.isEmpty(_.find(this.entityType.valueProperties, { name: valuePropertyName }));
+		return !Utils.isEmpty(_.find(this.entityType.valueProperties, {name: valuePropertyName}));
 	}
 
 	objectPropertyExists(objectPropertyName) {
-		return !Utils.isEmpty(_.find(this.entityType.objectProperties, { name: objectPropertyName }));
+		return !Utils.isEmpty(_.find(this.entityType.objectProperties, {name: objectPropertyName}));
 	}
 
 	/**
@@ -450,11 +490,18 @@ class Entity extends EntityBase {
 			for (let p of props) {
 				m[p.name] = this.getValue(p.name);
 			}
-			if (includeObjects) {
-				props = this.entityType.objectProperties;
-				for (let p of props) {
-					m[p.name] = this.getObject(p.name).toJSON();
+			props = this.entityType.objectProperties;
+			m.links = [];
+			let def;
+			for (let p of props) {
+				def = {
+					name: p.name,
+					id: this.objects[p.name],
+				};
+				if (includeObjects) {
+					def.obj = this.getObject(p.name).toJSON();
 				}
+				m.links.push(def);
 			}
 		}
 		return m;

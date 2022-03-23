@@ -346,10 +346,10 @@ describe("Entities", function () {
 		let person = await personType.createInstance("John");
 		let wife = await personType.createInstance("Anna");
 		let job = await jobType.createInstance("Cook");
-		person.setObject("hasJob", job);
-		person.setObject("hasWife", wife);
+		await person.setObject("hasJob", job);
+		await person.setObject("hasWife", wife);
 		// console.log(person.toJSON(true));
-		console.log(JSON.stringify(await entities.exportSchema(), null, 4));
+		// console.log(JSON.stringify(await entities.exportSchema(), null, 4));
 	});
 
 	it("should import/export the schema", async function () {
@@ -549,6 +549,9 @@ describe("Entities", function () {
 		expect(vals).toEqual(should);
 	});
 	it("should get/set the object", async function () {
+		// ===================================================================
+		// outside a space
+		// ===================================================================
 		const a = await Entity.untyped("A");
 		const b = await Entity.untyped("B", "b");
 		let hasThrown = false;
@@ -559,7 +562,46 @@ describe("Entities", function () {
 		}
 		expect(hasThrown).toBeTruthy();
 		await a.setObject("link", b);
-		const found = await a.getObject("link");
+		let found = await a.getObject("link");
 		expect(found.name).toEqual("b");
+		// ===================================================================
+		// with space
+		// ===================================================================
+		let space = await EntitySpace.inMemory();
+		await space.addEntityType("Book");
+		await space.addEntityType("Author");
+		await space.addObjectProperty("Book", "author", "Author");
+
+		let book = await space.createInstance("Book", "MKS");
+		let author = await space.createInstance("Author", "Wolfram");
+		await space.setObject(book, "author", author);
+		found = await space.getObject(book, "author");
+		expect(found.name).toEqual("Wolfram");
+	});
+	it("should save the object property target if not present in the space", async function () {
+		let space = await EntitySpace.inMemory();
+		await space.addEntityType("Book");
+		await space.addEntityType("Author");
+		await space.addObjectProperty("Book", "author", "Author");
+		let book = await space.createInstance("Book", "MKS");
+		let author = await space.createDetachedInstance("Author", "Wolfram");
+		await space.setObject(book, "author", author);
+		// via the object prop the target was added to the space
+		let found = await space.getInstanceById(author.id);
+		expect(found).not.toBeNull();
+		expect(found.name).toEqual("Wolfram");
+
+		// removing via null is not working, should do via the removeObject method
+		let hasThrown = false;
+		try {
+			await space.setObject(book, "author", null);
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
+		// but this works
+		await book.removeObject("author");
+		found = await space.getInstanceById(book.id);
+		expect(await found?.getObject("author")).toBeNull();
 	});
 });

@@ -1,6 +1,5 @@
-const {Strings, Utils} = require("@graphminer/Utils");
+const { Strings, Utils } = require("@graphminer/Utils");
 const _ = require("lodash");
-const Entity = require("./entity");
 
 class SpaceUtils {
 	/**
@@ -163,9 +162,43 @@ class SpaceUtils {
 			}
 			throw new Error("The given object can't be assigned, expected nil or an instance.");
 		}
-
 	}
 
+	/**
+	 * Tries to make sense of the given data to get an entity type.
+	 * @param entityTypeSpec {*|string|EntityType} A type name, a type or a serialized type.
+	 * @param throwError {boolean} Throw if the specs can't be interpreted into an entity type name.
+	 * @returns {string|null}
+	 */
+	static getTypeNameFromSpecs(entityTypeSpec, throwError = true) {
+		const EntityType = require("./entityType");
+		const Entity = require("./entity");
+
+		if (Utils.isEmpty(entityTypeSpec)) {
+			if (throwError) {
+				throw new Error("Can't turn the given entity type specification into an entity type.");
+			}
+			return null;
+		} else if (entityTypeSpec instanceof EntityType) {
+			return entityTypeSpec.name;
+		} else if (entityTypeSpec instanceof Entity) {
+			const e = entityTypeSpec;
+			if (e.isTyped) {
+				return e.entityType.name;
+			} else {
+				return e.typeName;
+			}
+		} else if (_.isString(entityTypeSpec)) {
+			return entityTypeSpec;
+		} else if (_.isPlainObject(entityTypeSpec)) {
+			return entityTypeSpec.typeName !== "EntityType" ? null : entityTypeSpec.name;
+		} else {
+			if (throwError) {
+				throw new Error("Can't turn the given entity type specification into an entity type.");
+			}
+			return null;
+		}
+	}
 
 	/**
 	 * Validates the given schema for import.

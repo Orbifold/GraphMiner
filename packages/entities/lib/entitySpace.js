@@ -124,7 +124,7 @@ class EntitySpace {
 		const coll = [];
 		for (const item of found) {
 			const entityType = await this.getEntityType(item.typeName);
-			const instance = Entity.fromJSON(entityType, item);
+			const instance = await Entity.fromJSON(entityType, item);
 			if (instance) {
 				coll.push(instance);
 			}
@@ -271,7 +271,7 @@ class EntitySpace {
 		if (!_.isString(valuePropertyName)) {
 			throw new Error(Strings.ShoudBeType("valuePropertyName", "string", "EntitySpace.addValueProperty"));
 		}
-		const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const entityType = await this.getEntityType(entityTypeSpec);
 		if (Utils.isEmpty(entityType)) {
 			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
@@ -290,12 +290,12 @@ class EntitySpace {
 			throw new Error(Strings.ShoudBeType("objectPropertyName", "string", "EntitySpace.addObjectProperty"));
 		}
 
-		const sourceEntityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const sourceEntityTypeName = SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const sourceEntityType = await this.getEntityType(entityTypeSpec);
 		if (Utils.isEmpty(objectTypeSpec)) {
 			throw new Error(Strings.TypeDoesNotExist(sourceEntityTypeName));
 		}
-		const targetTypeName = this.#getEntityTypeNameFromSpecs(objectTypeSpec);
+		const targetTypeName = SpaceUtils.getTypeNameFromSpecs(objectTypeSpec);
 		let objectProperty;
 		if (this.enforceSchema) {
 			const targetEntityType = await this.getEntityType(targetTypeName);
@@ -327,7 +327,7 @@ class EntitySpace {
 	 * @returns {Promise<Entity>}
 	 */
 	async createInstance(entityTypeSpec, entitySpec) {
-		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const entity = await this.createDetachedInstance(entityTypeSpec, entitySpec);
 		if (this.enforceSchema) {
 			const exists = await this.getEntityType(entityTypeName);
@@ -473,7 +473,7 @@ class EntitySpace {
 		if (!this.settings.enforceSchema) {
 			return;
 		}
-		const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const found = await this.entityTypeExists(entityTypeName);
 		if (!found) {
 			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
@@ -517,7 +517,7 @@ class EntitySpace {
 	 * @returns {Promise<Entity>}
 	 */
 	async upsertInstance(entityTypeSpec, entitySpec) {
-		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const entity = await this.createDetachedInstance(entityTypeSpec, entitySpec);
 		if (this.enforceSchema) {
 			const exists = await this.getEntityType(entityTypeName);
@@ -539,7 +539,7 @@ class EntitySpace {
 	 * @returns {Promise<ValueProperty>}
 	 */
 	async getValueProperties(entityTypeSpec) {
-		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const entityType = await this.getEntityType(entityTypeName);
 		if (Utils.isEmpty(entityType)) {
 			throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name));
@@ -607,17 +607,80 @@ class EntitySpace {
 	 * - This creates a link with another instance.
 	 * - You can also use the {@link connect} method to link to instances.
 	 * @see connect
-	 * @param entitySpec
-	 * @param objectSpec
-	 * @param obj
+	 * @param entitySpec {Entity} The instance.
+	 * @param objectSpec {ObjectProperty|string} The object property or a name.
+	 * @param objSpec {Entity} The instance to set.
+	 * @param addObjectIfNotPresent {boolean} Whether the object should be added if not in the space.
 	 * @returns {Promise<void>}
 	 */
-	async setObject(entitySpec, objectSpec, obj) {
+	async setObject(entitySpec, objectSpec, objSpec, addObjectIfNotPresent = true) {
+		if (Utils.isEmpty(objSpec)) {
+			throw new Error("Use the 'removeObject' method to delete an object property.");
+		}
+		const objName = SpaceUtils.getValueNameFromSpecs(objectSpec);
+		if (Utils.isEmpty(objName)) {
+			throw new Error("Can't turn the given specs into an object property.");
+		}
 		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
 		if (Utils.isEmpty(entityId)) {
 			throw new Error("Can't turn the given entity specs into an entity id.");
 		}
 		const entity = await this.getInstanceById(entityId);
+		if (Utils.isEmpty(entity)) {
+			throw new Error("The entity was not found in the space.");
+		}
+		const objId = SpaceUtils.getIdFromSpecs(objSpec);
+		let obj = await this.getInstanceById(objId);
+		if (Utils.isEmpty(obj)) {
+			if (addObjectIfNotPresent) {
+				const typeName = SpaceUtils.getTypeNameFromSpecs(objSpec);
+				obj = await this.createInstance(typeName, objSpec);
+			} else {
+				throw new Error("Target of the property does not exist.");
+			}
+		}
+		await entity.setObject(objName, obj, false);
+		if (entity.isTyped) {
+			await this.upsertInstance(entity.entityType.name, entity);
+		} else {
+			await this.upsertInstance(entity.typeName, entity);
+		}
+	}
+
+	/**
+	 * Returns the instance connected via the specified object property.
+	 * @param entitySpec {Entity} An instance.
+	 * @param objSpec {ObjectProperty|string} An object property or name.
+	 * @returns {Promise<*|null>}
+	 */
+	async getObject(entitySpec, objSpec) {
+		const objName = SpaceUtils.getObjectNameFromSpecs(objSpec);
+		if (Utils.isEmpty(objName)) {
+			throw new Error("Can't turn the given specs into an object property.");
+		}
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+
+		if (Utils.isEmpty(entity)) {
+			throw new Error("The entity was not found in the space.");
+		}
+		return entity.getObject(objName);
+	}
+
+	async removeObject(entitySpec, objPropSpec) {
+		const objName = SpaceUtils.getObjectNameFromSpecs(objPropSpec);
+		if (Utils.isEmpty(objName)) {
+			throw new Error("Can't turn the given specs into an object property.");
+		}
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+		await entity.removeObject(objName, true);
 	}
 
 	/**
@@ -626,7 +689,7 @@ class EntitySpace {
 	 * @returns {Promise<ObjectProperty>}
 	 */
 	async getObjectProperties(entityTypeSpec) {
-		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
 		const entityType = await this.getEntityType(entityTypeName);
 		if (Utils.isEmpty(entityType)) {
 			throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name));
@@ -680,33 +743,11 @@ class EntitySpace {
 			return [];
 		}
 		const found = await this.store.getInstances(typeName);
-		return found.map((e) => Entity.fromJSON(entityType, e));
-	}
-
-	/**
-	 * Tries to make sense of the given data to get an entity type.
-	 * @param entityTypeSpec {*|string|EntityType} A type name, a type or a serialized type.
-	 * @param throwError {boolean} Throw if the specs can't be interpreted into an entity type name.
-	 * @returns {string|null}
-	 */
-	#getEntityTypeNameFromSpecs(entityTypeSpec, throwError = true) {
-		if (Utils.isEmpty(entityTypeSpec)) {
-			if (throwError) {
-				throw new Error("Can't turn the given entity type specification into an entity type.");
-			}
-			return null;
-		} else if (entityTypeSpec instanceof EntityType) {
-			return entityTypeSpec.name;
-		} else if (_.isString(entityTypeSpec)) {
-			return entityTypeSpec;
-		} else if (_.isPlainObject(entityTypeSpec)) {
-			return entityTypeSpec.typeName !== "EntityType" ? null : entityTypeSpec.name;
-		} else {
-			if (throwError) {
-				throw new Error("Can't turn the given entity type specification into an entity type.");
-			}
-			return null;
+		const coll = [];
+		for (const ins of found) {
+			coll.push(await Entity.fromJSON(entityType, ins));
 		}
+		return coll;
 	}
 
 	/**
@@ -722,7 +763,7 @@ class EntitySpace {
 			SpaceUtils.detachEntity(entitySpec);
 			return entitySpec;
 		}
-		const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec, throwError);
+		const entityTypeName = SpaceUtils.getTypeNameFromSpecs(entityTypeSpec, throwError);
 		let entity;
 		if (this.enforceSchema) {
 			const entityType = await this.getEntityType(entityTypeName);

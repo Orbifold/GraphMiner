@@ -220,6 +220,7 @@ class LocalEntityStore extends EntityStore {
 			case 1:
 				const e = args[0];
 				if (e instanceof Entity) {
+
 					json = JSON.parse(JSON.stringify(e));
 				} else if (_.isPlainObject(e)) {
 					json = e;
