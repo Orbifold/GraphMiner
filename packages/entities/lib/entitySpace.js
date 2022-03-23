@@ -3,6 +3,7 @@ const _ = require("lodash");
 const EntityType = require("./entityType");
 const Entity = require("./entity");
 const ValueProperty = require("./valueProperty");
+const ObjectProperty = require("./objectProperty");
 
 /**
  * Gateway to entities.
@@ -271,7 +272,7 @@ class EntitySpace {
 
 	/**
 	 * Adds a value property to the type.
-	 * @param options {EntityType|string} The name of a type or an EntityType.
+	 * @param entityTypeSpec {EntityType|string} The name of a type or an EntityType.
 	 * @param valuePropertyName {string} The name of the value property.
 	 * @param valueType {string} The type of the value.
 	 * @returns {Promise<void>}
@@ -279,20 +280,47 @@ class EntitySpace {
 	 *
 	 * personType.addValueType("Person", "age", "Number);
 	 */
-	async addValueProperty(options, valuePropertyName, valueType) {
-		let entityType;
-		if (_.isString(options)) {
-			await this.checkEntityTypeIsInSchema(options);
-			entityType = await this.getEntityType(options);
-		} else {
-			entityType = options;
+	async addValueProperty(entityTypeSpec, valuePropertyName, valueType) {
+		if (Utils.isEmpty(valuePropertyName)) {
+			throw new Error(Strings.IsNil("valuePropertyName", "EntitySpace.valuePropertyName"));
 		}
-		if (!(entityType instanceof EntityType)) {
-			throw new Error(Strings.ShoudBeType("options", "EntityType or name of an EntityType", "Entities.addValueProperty"));
+		if (!_.isString(valuePropertyName)) {
+			throw new Error(Strings.ShoudBeType("valuePropertyName", "string", "EntitySpace.addValueProperty"));
+		}
+		const entityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityType = await this.getEntityType(entityTypeSpec);
+		if (Utils.isEmpty(entityType)) {
+			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 		}
 		const prop = new ValueProperty(valuePropertyName, valueType, entityType.name);
 		entityType.addValueProperty(prop);
 		await this.updateEntityType(entityType);
+	}
+
+	async addObjectProperty(entityTypeSpec, objectPropertyName, objectTypeSpec) {
+		if (Utils.isEmpty(objectPropertyName)) {
+			throw new Error(Strings.IsNil("objectPropertyName", "EntitySpace.addObjectProperty"));
+		}
+		if (!_.isString(objectPropertyName)) {
+			throw new Error(Strings.ShoudBeType("objectPropertyName", "string", "EntitySpace.addObjectProperty"));
+		}
+
+		const sourceEntityTypeName = this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const sourceEntityType = await this.getEntityType(entityTypeSpec);
+		if (Utils.isEmpty(objectTypeSpec)) {
+			throw new Error(Strings.TypeDoesNotExist(sourceEntityTypeName));
+		}
+		const targetTypeName = this.#getEntityTypeNameFromSpecs(objectTypeSpec);
+		let objectProperty;
+		if (this.enforceSchema) {
+			const targetEntityType = await this.getEntityType(targetTypeName);
+			if (Utils.isEmpty(targetEntityType)) {
+				throw new Error(Strings.TypeDoesNotExist(targetTypeName));
+			}
+		}
+		objectProperty = new ObjectProperty(objectPropertyName, targetTypeName, sourceEntityTypeName);
+		sourceEntityType.addObjectProperty(objectProperty);
+		await this.updateEntityType(sourceEntityType);
 	}
 
 	/**
@@ -540,6 +568,48 @@ class EntitySpace {
 	}
 
 	/**
+	 * Sets the value of a property.
+	 * @param entitySpec {*|string|Entity} An entity, an id or a serialized entity.
+	 * @param valueSpec {*|string|ValueProperty} A value property, a property name or a serialized value property.
+	 * @param value {*} The value to set.
+	 * @returns {Promise<void>}
+	 */
+	async setValueProperty(entitySpec, valueSpec, value) {
+		const valueName = this.#getValueNameFromSpecs(valueSpec);
+		if (Utils.isEmpty(valueName)) {
+			throw new Error("Can't turn the given specs into a value property.");
+		}
+		const entityId = this.#getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+		if (Utils.isEmpty(entity)) {
+			throw new Error("The entity was not found in the space.");
+		}
+		await entity.setValue(valueName, value, true, false);
+		if (entity.isTyped) {
+			await this.upsertInstance(entity.entityType.name, entity);
+		} else {
+			await this.upsertInstance(entity.typeName, entity);
+		}
+	}
+
+	async getObjectProperties(entityTypeSpec) {
+		const entityTypeName = await this.#getEntityTypeNameFromSpecs(entityTypeSpec);
+		const entityType = await this.getEntityType(entityTypeName);
+		if (Utils.isEmpty(entityType)) {
+			throw new Error(Strings.TypeDoesNotExist(_.isString(entityTypeSpec) ? entityTypeSpec : entityTypeSpec.name));
+		}
+		this.ensureStoreMethodExists("getValueProperties");
+		const found = await this.store.getObjectProperties(entityTypeName);
+		if (Utils.isEmpty(found)) {
+			return [];
+		}
+		return found.map((p) => ObjectProperty.fromJSON(p));
+	}
+
+	/**
 	 * Returns the instance with the specified id.
 	 * @param id {string} The id of the instance.
 	 * @returns {Promise<Entity|null>}
@@ -554,7 +624,7 @@ class EntitySpace {
 			const entityType = await this.getEntityType(typeName);
 			// happens if the type has been removed but not the instance
 			if (Utils.isEmpty(entityType)) {
-				return Entity.untyped(typeName, found);
+				return await Entity.untyped(typeName, found);
 			} else {
 				return Entity.fromJSON(entityType, found);
 			}
@@ -609,6 +679,36 @@ class EntitySpace {
 		}
 	}
 
+	#getValueNameFromSpecs(valueSpec) {
+		if (Utils.isEmpty(valueSpec)) {
+			return null;
+		}
+		if (_.isString(valueSpec)) {
+			return valueSpec;
+		} else if (valueSpec instanceof ValueProperty) {
+			return valueSpec.name || null;
+		} else if (_.isPlainObject(valueSpec)) {
+			return valueSpec.name || null;
+		} else {
+			return null;
+		}
+	}
+
+	#getEntityIdFromSpecs(entitySpec) {
+		if (Utils.isEmpty(entitySpec)) {
+			return null;
+		}
+		if (_.isString(entitySpec)) {
+			return entitySpec;
+		} else if (entitySpec instanceof Entity) {
+			return entitySpec.id || null;
+		} else if (_.isPlainObject(entitySpec)) {
+			return entitySpec.id || null;
+		} else {
+			return null;
+		}
+	}
+
 	#detachEntity(entity) {
 		if (Utils.isEmpty(entity)) {
 			return;
@@ -641,9 +741,10 @@ class EntitySpace {
 			if (Utils.isEmpty(entityType)) {
 				throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 			}
-			entity = Entity.typed(entityType, entitySpec);
+			// since detached, obviously shouldn't save it
+			entity = await Entity.typed(entityType, entitySpec, false);
 		} else {
-			entity = Entity.untyped(entityTypeName, entitySpec);
+			entity = await Entity.untyped(entityTypeName, entitySpec, false);
 		}
 		entity.space = null;
 		this.#detachEntity(entity);
@@ -895,6 +996,40 @@ class EntitySpace {
 					}
 				}
 			}
+		}
+	}
+
+	async connect(source, relationSpec, target) {
+		const sourceId = this.#getEntityIdFromSpecs(source);
+		if (_.isNil(sourceId)) {
+			throw new Error("Could not turn 'source' into an instance id.");
+		}
+		const targetId = this.#getEntityIdFromSpecs(target);
+		if (_.isNil(targetId)) {
+			throw new Error("Could not turn 'target' into an instance id.");
+		}
+		const sourceEntity = await this.getInstanceById(sourceId);
+		if (Utils.isEmpty(sourceEntity)) {
+			throw new Error("Source instance does not exist.");
+		}
+		const targetEntity = await this.getInstanceById(targetId);
+		if (Utils.isEmpty(targetEntity)) {
+			throw new Error("Target instance does not exist.");
+		}
+		const objectRelationName = _.isString(relationSpec) ? relationSpec : relationSpec.name || null;
+		if (Utils.isEmpty(objectRelationName)) {
+			throw new Error("The given relation specification is not valid");
+		}
+		if (sourceEntity.entityType) {
+			const objProp = sourceEntity.entityType.getObjectProperty(objectRelationName);
+			if (Utils.isEmpty(objProp)) {
+				throw new Error(`Cannot connect given instance with '${objectRelationName}', it does not exist on type '${sourceEntity.entityType.name}'. `);
+			}
+			sourceEntity.setObject(objectRelationName, targetEntity);
+			await this.upsertInstance(sourceEntity.entityType, sourceEntity);
+		} else {
+			sourceEntity.setObject(objectRelationName, targetEntity);
+			await this.upsertInstance(sourceEntity.typeName, sourceEntity);
 		}
 	}
 }

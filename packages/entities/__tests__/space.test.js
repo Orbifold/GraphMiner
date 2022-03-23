@@ -135,6 +135,7 @@ describe("Entities", function () {
 		// this will load the content
 		await space.init(dbPath);
 		expect(await space.countEntityTypes()).toEqual(1);
+		await space.getInstances("Book"); //?
 		expect(await space.countEntities()).toEqual(1);
 
 		found = await space.getInstanceById(book.id);
@@ -271,14 +272,28 @@ describe("Entities", function () {
 		personType.addValueProperty("age", "Number");
 		personType.addObjectProperty("wife", "Person");
 
-		const person = Entity.typed(personType, "Swa");
-		person.setValue("age", 33);
+		const person = await Entity.typed(personType, "Swa");
+		await person.setValue("age", 33);
 		const description = faker.lorem.sentence();
-		person.setValue("description", description);
+		await person.setValue("description", description);
+
 		// should be possible to set something not defined by the schema
-		expect(() => person.setValue("abc", 5)).toThrow(Error);
+		let hasThrown = false;
+		try {
+			await person.setValue("abc", 5);
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
 		// setting wrong type should not work
-		expect(() => person.setValue("age", "something")).toThrow(Error);
+		hasThrown = false;
+		try {
+			await person.setValue("age", "something");
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
+
 		let json = person.toJSON();
 		// will not be picked up by the schema
 		json.x = 45;
@@ -358,12 +373,18 @@ describe("Entities", function () {
 		expect(changed.valuePropertyExists("country"));
 		console.log(JSON.stringify(await entities.exportSchema(), null, 4));
 	});
-	it("should work for entities without schema", function () {
-		const thing = Entity.untyped("W", "A");
+	it("should work for entities without schema", async function () {
+		const thing = await Entity.untyped("W", "A");
 		expect(thing.isUntyped).toBeTruthy();
-		thing.setValue("s", 3);
+		await thing.setValue("s", 3, true, false);
 		expect(thing.get("s")).toEqual(3);
-		expect(() => Entity.untyped(null, "A")).toThrow(Error);
+		let hasThrown = false;
+		try {
+			await Entity.untyped(null, "A");
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
 	});
 
 	it("should check the given json", function () {
@@ -474,6 +495,7 @@ describe("Entities", function () {
 		const space = await EntitySpace.inMemory();
 		await space.addEntityType("A");
 		await space.addValueProperty("A", "color", "string");
+		const ins = await space.getInstances("A"); //?
 		const car = await space.createInstance("A", { id: "a", name: "a", color: "white" });
 		let found = await space.getInstanceById(car.id);
 		expect(found.name).toEqual("a");
@@ -484,5 +506,35 @@ describe("Entities", function () {
 		expect(found.name).toEqual("a");
 		expect(found.get("color")).toEqual("grey");
 		expect(found.get("name")).toEqual("a");
+	});
+	it("should connect instances", async function () {
+		// ===================================================================
+		// enforced schema
+		// ===================================================================
+
+		let space = await EntitySpace.inMemory();
+		await space.addEntityType("Book");
+		const Author = await space.addEntityType("Author");
+		await space.addObjectProperty("Book", "hasAuthor", Author);
+		const props = await space.getObjectProperties("Book");
+		expect(props.length).toEqual(1);
+		expect(props[0].name).toEqual("hasAuthor");
+		expect(props[0].objectType).toEqual("Author");
+		expect(props[0].subjectType).toEqual("Book");
+
+		const topology = await space.createInstance("Book", "Topology");
+		const dugundji = await space.createInstance("Author", "Dugundji");
+		await space.connect(topology, "hasAuthor", dugundji);
+		let book = await space.getInstanceById(topology.id);
+		expect(book.objectPropertyExists("hasAuthor")).toBeTruthy();
+	});
+	it("should set a value property", async function () {
+		let space = await EntitySpace.inMemory();
+		await space.addEntityType("Book");
+		await space.addValueProperty("Book", "author", "string");
+		const topology = await space.createInstance("Book", "Topology");
+		await space.setValueProperty(topology, "author", "Dugundji");
+		const ins = await space.getInstances("Book");
+		expect(ins[0].get("author")).toEqual("Dugundji");
 	});
 });
