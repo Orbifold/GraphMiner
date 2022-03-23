@@ -1,7 +1,7 @@
 {
   "name": "@graphminer/utils",
   "private": false,
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Generic utilities.",
   "author": "Swa <swa@orbifold.net>",
   "homepage": "https://graphminer.io",
