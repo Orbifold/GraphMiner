@@ -1,9 +1,9 @@
 const Entity = require("./entity");
-const {Utils, Strings} = require("@graphminer/Utils");
+const { Utils, Strings } = require("@graphminer/Utils");
 
 const _ = require("lodash");
 const EntityType = require("./entityType");
-const {LocalStorage} = require("@graphminer/store");
+const { LocalStorage } = require("@graphminer/store");
 const EntityStore = require("./entityStore");
 
 /**
@@ -99,7 +99,7 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(id)) {
 			throw new Error(Strings.ShoudBeType("id", "string", "LocalEntityStore.getEntityTypeById"));
 		}
-		return await this.storage.findOne({id}, EntityTypeCollectionName);
+		return await this.storage.findOne({ id }, EntityTypeCollectionName);
 	}
 
 	/**
@@ -107,7 +107,7 @@ class LocalEntityStore extends EntityStore {
 	 * @returns {Promise<void>}
 	 */
 	async getMetadata(name = null) {
-		let metadata = await this.storage.findOne({__id: "Metadata"}, MetadataCollectionName);
+		let metadata = await this.storage.findOne({ __id: "Metadata" }, MetadataCollectionName);
 		if (Utils.isEmpty(metadata)) {
 			metadata = {};
 		} else {
@@ -125,12 +125,12 @@ class LocalEntityStore extends EntityStore {
 		const metadata = (await this.getMetadata()) || {};
 		metadata[name] = value;
 		metadata["__id"] = "Metadata";
-		return await this.storage.upsert(metadata, MetadataCollectionName, {__id: "Metadata"});
+		return await this.storage.upsert(metadata, MetadataCollectionName, { __id: "Metadata" });
 	}
 
 	async assignMetadata(metadata) {
 		metadata["__id"] = "Metadata";
-		return await this.storage.upsert(metadata, MetadataCollectionName, {__id: "Metadata"});
+		return await this.storage.upsert(metadata, MetadataCollectionName, { __id: "Metadata" });
 	}
 
 	/**
@@ -148,7 +148,7 @@ class LocalEntityStore extends EntityStore {
 		} else if (obj instanceof EntityType) {
 			json = JSON.parse(JSON.stringify(obj));
 		}
-		await this.storage.upsert(json, EntityTypeCollectionName, {name: obj.name});
+		await this.storage.upsert(json, EntityTypeCollectionName, { name: obj.name });
 	}
 
 	/**
@@ -172,9 +172,9 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(entityTypeName)) {
 			throw new Error(Strings.ShoudBeType("entityTypeName", "string", "LocalEntityStore.removeEntityType"));
 		}
-		await this.storage.removeWhere({name: entityTypeName}, EntityTypeCollectionName);
+		await this.storage.removeWhere({ name: entityTypeName }, EntityTypeCollectionName);
 		if (removeInstances) {
-			await this.storage.removeWhere({typeName: entityTypeName}, EntityCollectionName);
+			await this.storage.removeWhere({ typeName: entityTypeName }, EntityCollectionName);
 		}
 	}
 
@@ -182,15 +182,15 @@ class LocalEntityStore extends EntityStore {
 		if (Utils.isEmpty(id)) {
 			return;
 		}
-		this.storage.removeWhere({id}, EntityCollectionName);
+		this.storage.removeWhere({ id }, EntityCollectionName);
 	}
 
 	async removeInstances(entityTypeName) {
-		this.storage.removeWhere({typeName: entityTypeName}, EntityCollectionName);
+		this.storage.removeWhere({ typeName: entityTypeName }, EntityCollectionName);
 	}
 
 	async getValueProperties(entityTypeName) {
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, EntityTypeCollectionName);
 		if (Utils.isEmpty(found)) {
 			return [];
 		}
@@ -198,7 +198,7 @@ class LocalEntityStore extends EntityStore {
 	}
 
 	async getObjectProperties(entityTypeName) {
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, EntityTypeCollectionName);
 		if (Utils.isEmpty(found)) {
 			return [];
 		}
@@ -220,7 +220,6 @@ class LocalEntityStore extends EntityStore {
 			case 1:
 				const e = args[0];
 				if (e instanceof Entity) {
-
 					json = JSON.parse(JSON.stringify(e));
 				} else if (_.isPlainObject(e)) {
 					json = e;
@@ -237,8 +236,7 @@ class LocalEntityStore extends EntityStore {
 				break;
 		}
 		this.validateInstance(json);
-		await this.storage.upsert(json, EntityCollectionName, {id: json.id});
-
+		await this.storage.upsert(json, EntityCollectionName, { id: json.id });
 	}
 
 	validateInstance(instance) {
@@ -257,11 +255,11 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(id)) {
 			throw new Error(Strings.ShoudBeType("id", "string", "LocalEntityStore.getInstanceById"));
 		}
-		return await this.storage.findOne({id}, EntityCollectionName);
+		return await this.storage.findOne({ id }, EntityCollectionName);
 	}
 
 	async getInstances(typeName) {
-		return await this.storage.find({typeName}, EntityCollectionName);
+		return await this.storage.find({ typeName }, EntityCollectionName);
 	}
 
 	/**
@@ -283,7 +281,7 @@ class LocalEntityStore extends EntityStore {
 		} else if (_.isString(entityTypeSpec)) {
 			entityTypeName = entityTypeSpec.toString().trim();
 		}
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, EntityTypeCollectionName);
 		return found || null;
 	}
 
@@ -307,7 +305,7 @@ class LocalEntityStore extends EntityStore {
 		if (Utils.isEmpty(entityTypeName)) {
 			return await this.storage.count({}, EntityCollectionName);
 		} else {
-			return await this.storage.count({typeName: entityTypeName}, EntityCollectionName);
+			return await this.storage.count({ typeName: entityTypeName }, EntityCollectionName);
 		}
 	}
 
@@ -334,6 +332,30 @@ class LocalEntityStore extends EntityStore {
 			coll.push(await this.storage.random(EntityCollectionName));
 		}
 		return coll;
+	}
+
+	async removeFieldFromInstances(entityTypeName, fieldName) {
+		const updater = (obj) => {
+			delete obj[fieldName];
+			return obj;
+		};
+		await this.storage.findAndUpdateCollection(EntityCollectionName, updater, { typeName: entityTypeName });
+	}
+
+	async removeLinkFromInstances(entityTypeName, objectPropertyName) {
+		const updater = (obj) => {
+			if (obj.links) {
+				const coll = [];
+				for (const link of obj.links) {
+					if (link.name !== objectPropertyName) {
+						coll.push(link);
+					}
+				}
+				obj.links = coll;
+			}
+			return obj;
+		};
+		await this.storage.findAndUpdateCollection(EntityCollectionName, updater, { typeName: entityTypeName });
 	}
 
 	async save() {

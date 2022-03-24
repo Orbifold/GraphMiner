@@ -557,6 +557,13 @@ class LocalStorage extends Store {
 		return this.#db.listCollections().map((c) => c.name);
 	}
 
+	async findAndUpdateCollection(collectionName, updateFunction, condition = {}) {
+		const collection = this.#db.getCollection(collectionName);
+		if (collection) {
+			collection.findAndUpdate(condition, updateFunction);
+		}
+	}
+
 	/**
 	 * Fetches a random item from the specified collection.
 	 * @param collectionName {string} The name of the collection.

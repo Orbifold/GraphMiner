@@ -1,6 +1,9 @@
 const { Strings, Utils } = require("@graphminer/Utils");
 const _ = require("lodash");
 
+/*
+ * Various functions used across the whole field.
+ * */
 class SpaceUtils {
 	/**
 	 * Returns a value name from the given specs if possible.
@@ -31,24 +34,24 @@ class SpaceUtils {
 
 	/**
 	 * Returns an object name from the given specs if possible.
-	 * @param valueSpec {*}
+	 * @param objSpec {*}
 	 * @param throwErrorIfNil
 	 * @returns {string|null}
 	 */
-	static getObjectNameFromSpecs(valueSpec, throwErrorIfNil = true) {
+	static getObjectNameFromSpecs(objSpec, throwErrorIfNil = true) {
 		const ObjectProperty = require("./objectProperty");
-		if (Utils.isEmpty(valueSpec)) {
+		if (Utils.isEmpty(objSpec)) {
 			if (throwErrorIfNil) {
 				throw new Error("Could not turn the object specification into a value name.");
 			}
 			return null;
 		}
-		if (_.isString(valueSpec)) {
-			return valueSpec;
-		} else if (valueSpec instanceof ObjectProperty) {
-			return valueSpec.name || null;
-		} else if (_.isPlainObject(valueSpec)) {
-			return valueSpec.name || null;
+		if (_.isString(objSpec)) {
+			return objSpec;
+		} else if (objSpec instanceof ObjectProperty) {
+			return objSpec.name || null;
+		} else if (_.isPlainObject(objSpec)) {
+			return objSpec.name || null;
 		} else {
 			if (throwErrorIfNil) {
 				throw new Error("Could not turn the object specification into a value name.");
@@ -161,6 +164,19 @@ class SpaceUtils {
 				return;
 			}
 			throw new Error("The given object can't be assigned, expected nil or an instance.");
+		}
+	}
+
+	static getValueValidator(baseTypeName) {
+		switch (baseTypeName.toLowerCase()) {
+			case "number":
+				return _.isNumber;
+			case "string":
+				return _.isString;
+			case "boolean":
+				return _.isBoolean;
+			default:
+				throw new Error(Strings.Invalid(baseTypeName, "Entity.validateValue"));
 		}
 	}
 

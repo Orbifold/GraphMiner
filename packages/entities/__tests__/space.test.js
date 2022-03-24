@@ -171,7 +171,7 @@ describe("Entities", function () {
 	it("should add value types", async function () {
 		const entities = await EntitySpace.inMemory();
 		const entityType = new EntityType("House");
-		entityType.addValueProperty("rooms", "number");
+		await entityType.addValueProperty("rooms", "number");
 		await entities.upsertEntityType(entityType);
 		expect(await entities.countEntityTypes()).toEqual(1);
 		let found = await entities.getEntityType("House");
@@ -257,7 +257,7 @@ describe("Entities", function () {
 		const entities = await EntitySpace.inMemory();
 		await entities.upsertEntityType("Boat");
 		let e = await entities.getEntityType("Boat");
-		e.addValueProperty("Speed", "Number");
+		await e.addValueProperty("Speed", "Number");
 		await entities.upsertEntityType(e);
 		e = await entities.getEntityType("Boat");
 		// console.log(JSON.stringify(e));
@@ -269,7 +269,7 @@ describe("Entities", function () {
 
 		// create the type
 		const personType = new EntityType("Person");
-		personType.addValueProperty("age", "Number");
+		await personType.addValueProperty("age", "Number");
 		personType.addObjectProperty("wife", "Person");
 
 		const person = await Entity.typed(personType, "Swa");
@@ -357,7 +357,7 @@ describe("Entities", function () {
 		await entities.setMetadata("name", "test");
 		await entities.setMetadata("id", "123");
 		let personType = new EntityType("Person");
-		personType.addValueProperty("age", "Number");
+		await personType.addValueProperty("age", "Number");
 		await entities.addEntityType(personType);
 
 		let json = personType.toJSON();
@@ -562,7 +562,7 @@ describe("Entities", function () {
 		}
 		expect(hasThrown).toBeTruthy();
 		await a.setObject("link", b);
-		let found = await a.getObject("link");
+		let found = await a.objects["link"];
 		expect(found.name).toEqual("b");
 		// ===================================================================
 		// with space
@@ -600,8 +600,9 @@ describe("Entities", function () {
 		}
 		expect(hasThrown).toBeTruthy();
 		// but this works
-		await book.removeObject("author");
+
+		await space.removeObjectProperty("Book", "author");
 		found = await space.getInstanceById(book.id);
-		expect(await found?.getObject("author")).toBeNull();
+		expect(await space.getObject(book, "author")).toBeNull();
 	});
 });

@@ -1,10 +1,27 @@
-const {Utils,Strings} = require("@graphminer/Utils");
+const {Utils, Strings} = require("@graphminer/Utils");
 
 
 /**
  * Base class for entities.
  */
 class EntityBase {
+	/**
+	 * The name of the element.
+	 * The class inheriting from this base class defines the meaning of 'name'.
+	 * @type string|null
+	 */
+	name;
+
+	/**
+	 * @type string|null
+	 */
+	description;
+
+	/**
+	 * @type string
+	 */
+	id;
+
 	/**
 	 * Base class for entities and types.
 	 * @abstract

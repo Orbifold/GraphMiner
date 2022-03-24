@@ -185,4 +185,20 @@ describe("LocalStorage", function () {
 		let uniq = await storage.distinct({}, "name", "Items");
 		expect(uniq.length).toEqual(100);
 	});
+
+	it("should remove a field in a collection", async function () {
+		const storage = await LocalStorage.inMemory();
+		for (let i = 0; i < 100; i++) {
+			if (Math.random() < 0.6) {
+				await storage.insert({ id: i, name: "Item " + i, f: true }, "Items");
+			} else {
+				await storage.insert({ id: i, name: "Item " + i }, "Items");
+			}
+		}
+		const before = await storage.find({ f: true }, "Items");
+		expect(before.length).toBeGreaterThan(0);
+		await storage.removeFieldInCollection("Items", "f");
+		const after = await storage.find({ f: true }, "Items");
+		expect(after.length).toEqual(0);
+	});
 });

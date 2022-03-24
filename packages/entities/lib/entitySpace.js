@@ -1,4 +1,4 @@
-const { Strings, Utils } = require("@graphminer/Utils");
+const {Strings, Utils} = require("@graphminer/Utils");
 const _ = require("lodash");
 const EntityType = require("./entityType");
 const Entity = require("./entity");
@@ -50,7 +50,8 @@ class EntitySpace {
 		return this.#store;
 	}
 
-	constructor() {}
+	constructor() {
+	}
 
 	/**
 	 * Creates an in-memory entity space.
@@ -157,24 +158,24 @@ class EntitySpace {
 	}
 
 	/**
-     * Initializes this entity manager.
-     *
-     * - no parameter: this will create an in-memory store
-     * - one parameters: this can be a strings specifying the local storage or a GraphMiner context object (when using as part of the GraphMiner plugin mechanism)
-     * - two parameters: a GraphMiner context and additional settings
+	 * Initializes this entity manager.
+	 *
+	 * - no parameter: this will create an in-memory store
+	 * - one parameters: this can be a strings specifying the local storage or a GraphMiner context object (when using as part of the GraphMiner plugin mechanism)
+	 * - two parameters: a GraphMiner context and additional settings
 
-     * @returns {Promise<void>}
-     *
-     * @example
-     * // in-memory space with defaults (schema enforced)
-     * const entities = new EntitySpace();
-     * await entities.init();
-     *
-     * @example
-     * // schema not enforced, properties and types are not checked
-     * const entities = new EntitySpace();
-     * await entities.init(null, {enforceSchema: false});
-     */
+	 * @returns {Promise<void>}
+	 *
+	 * @example
+	 * // in-memory space with defaults (schema enforced)
+	 * const entities = new EntitySpace();
+	 * await entities.init();
+	 *
+	 * @example
+	 * // schema not enforced, properties and types are not checked
+	 * const entities = new EntitySpace();
+	 * await entities.init(null, {enforceSchema: false});
+	 */
 	async init(...options) {
 		const [amount, args] = Utils.getArguments(options);
 		if (!Utils.isEmpty(this.store)) {
@@ -256,6 +257,8 @@ class EntitySpace {
 
 	/**
 	 * Adds a value property to the type.
+	 *
+	 * @see removeValueProperty
 	 * @param entityTypeSpec {EntityType|string} The name of a type or an EntityType.
 	 * @param valuePropertyName {string} The name of the value property.
 	 * @param valueType {string} The type of the value.
@@ -277,11 +280,61 @@ class EntitySpace {
 			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 		}
 		const prop = new ValueProperty(valuePropertyName, valueType, entityType.name);
-		entityType.addValueProperty(prop);
+		await entityType.addValueProperty(prop);
 		await this.updateEntityType(entityType);
 		return prop;
 	}
 
+	/**
+	 * Removes the specified value property and optionally updates all instances.
+	 * @param entityTypeSpec {EntityType|string} The name of a type or an EntityType.
+	 * @param valuePropertyName {string} The name of the value property.
+	 * @param removeFromInstances {boolean} If true it will remove the value from instances having the specified type.
+	 * @returns {Promise<void>}
+	 */
+	async removeValueProperty(entityTypeSpec, valuePropertyName, removeFromInstances = true) {
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
+		const entityType = await this.getEntityType(entityTypeSpec);
+		if (Utils.isEmpty(entityType)) {
+			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
+		}
+		entityType.removeValueProperty(valuePropertyName);
+
+		await this.upsertEntityType(entityType);
+		if (removeFromInstances) {
+			await this.store.removeFieldFromInstances(entityTypeName, valuePropertyName);
+		}
+	}
+
+	/**
+	 *
+	 * @param entityTypeSpec {EntityType|string} The name of a type or an EntityType.
+	 * @param objectPropertySpec {ObjectProperty|string} An object property or name.
+	 * @param removeFromInstances {boolean} If true it will remove the link from instances having the specified type.
+	 * @returns {Promise<void>}
+	 */
+	async removeObjectProperty(entityTypeSpec, objectPropertySpec, removeFromInstances = true) {
+		const entityTypeName = await SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
+		const entityType = await this.getEntityType(entityTypeSpec);
+		if (Utils.isEmpty(entityType)) {
+			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
+		}
+		const objectPropertyName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
+		entityType.removeObjectProperty(objectPropertyName);
+		await this.upsertEntityType(entityType);
+		if (removeFromInstances) {
+			await this.store.removeLinkFromInstances(entityTypeName, objectPropertyName);
+		}
+	}
+
+	/**
+	 * Adds an object property to the given entity type..
+	 * - To effectively create an object property (link, edge) between two instances, use the {@link setObject} or {@link connect} methods.
+	 * @param entityTypeSpec
+	 * @param objectPropertyName
+	 * @param objectTypeSpec
+	 * @returns {Promise<void>}
+	 */
 	async addObjectProperty(entityTypeSpec, objectPropertyName, objectTypeSpec) {
 		if (Utils.isEmpty(objectPropertyName)) {
 			throw new Error(Strings.IsNil("objectPropertyName", "EntitySpace.addObjectProperty"));
@@ -629,6 +682,9 @@ class EntitySpace {
 		if (Utils.isEmpty(entity)) {
 			throw new Error("The entity was not found in the space.");
 		}
+		if (entity.space !== this) {
+			throw new Error("The given instance is not part of this space.");
+		}
 		const objId = SpaceUtils.getIdFromSpecs(objSpec);
 		let obj = await this.getInstanceById(objId);
 		if (Utils.isEmpty(obj)) {
@@ -639,7 +695,8 @@ class EntitySpace {
 				throw new Error("Target of the property does not exist.");
 			}
 		}
-		await entity.setObject(objName, obj, false);
+
+		entity.objects[objName] = objId;
 		if (entity.isTyped) {
 			await this.upsertInstance(entity.entityType.name, entity);
 		} else {
@@ -667,9 +724,23 @@ class EntitySpace {
 		if (Utils.isEmpty(entity)) {
 			throw new Error("The entity was not found in the space.");
 		}
-		return entity.getObject(objName);
+		if (Utils.isEmpty(entity.objects)) {
+			return null;
+		}
+		const found = entity.objects[objName];
+		if (_.isString(found)) {
+			return await this.getInstanceById(found);
+		} else {
+			return Entity.fromJSON(found.typeName, found);
+		}
 	}
 
+	/**
+	 * Removes a link of the specified instance.
+	 * @param entitySpec
+	 * @param objPropSpec
+	 * @returns {Promise<void>}
+	 */
 	async removeObject(entitySpec, objPropSpec) {
 		const objName = SpaceUtils.getObjectNameFromSpecs(objPropSpec);
 		if (Utils.isEmpty(objName)) {
