@@ -5,15 +5,24 @@ const INodeBase = require("./iNodeBase");
 const { Utils, Strings } = require("@graphminer/Utils");
 const TreeNode = require("./treeNode");
 const Forest = require("./forest");
+const GraphUtils = require("./graphUtils");
 
 /**
  * Lightweight (directed) graph structure with some graph analytic methods.
- *
+ * - A node is something with an id.
+ * - An edge is something with a sourceId and a targetId.
+ * - The API can be used on its own, the only GraphMiner twist is the usage of 'typeName' in some place in order to handle serialization and compatibility with the GraphMiner EntitySpace.
  */
 class Graph {
 	typeName;
 	#groups;
+	/**
+	 * @type Array
+	 */
 	#edges;
+	/**
+	 * @type Array
+	 */
 	#nodes;
 
 	/**
@@ -35,7 +44,7 @@ class Graph {
 	 * Equivalent to instantiating a new Graph.
 	 * @return {Graph}
 	 */
-	static get empty() {
+	static empty() {
 		return new Graph();
 	}
 
@@ -151,7 +160,7 @@ class Graph {
 			id: u?.data?.id || Utils.id(),
 			name: u?.name || u?.data?.name,
 			description: u?.description,
-			typeName: u?.type || u?.data?.typeName || "ObjectProperty",
+			typeName: u?.type || u?.data?.typeName || "GenericLink",
 			sourceId: u?.data?.sourceId || Utils.id(),
 			targetId: u?.data?.targetId || Utils.id(),
 		};
@@ -178,6 +187,23 @@ class Graph {
 		for (const line of lines) {
 			h = Graph.parsePseudoCypherLine(line, entityCreator, edgeCreator);
 			g.mergeGraph(h);
+		}
+		return g;
+	}
+
+	static fromEdgeArray(edges) {
+		const g = Graph.empty();
+		if (_.isNil(edges)) {
+			return null;
+		}
+		if (_.isArray(edges)) {
+			if (edges.length === 0) {
+				return g;
+			}
+			for (const a of edges) {
+				// can be various things
+				g.addEdge(a);
+			}
 		}
 		return g;
 	}
@@ -597,7 +623,6 @@ class Graph {
 	}
 
 	toForest() {
-		const tree = new Forest();
 		const dic = {};
 		this.#nodes.forEach((d) => {
 			dic[d.id] = new TreeNode(d);
@@ -617,69 +642,41 @@ class Graph {
 
 	/**
 	 * Adds a node to the graph.
-	 * @param node {any} A INodeBase instance or some data which can be converted to it.
+	 * @param nodeSpec {any} A INodeBase instance or some data which can be converted to it.
 	 */
-	addNode(node) {
-		if (Utils.isEmpty(node)) {
-			throw new Error("Cannot add nil node to the graph.");
-		}
-		if (_.isString(node)) {
-			node = {
-				id: node,
-				typeName: "Unknown",
-			};
-		} else if (_.isNumber(node)) {
-			node = {
-				id: node.toString(),
-				typeName: "Unknown",
-			};
-		} else if (_.isObject(node)) {
-			node = JSON.parse(JSON.stringify(node));
-		}
-		// at this point we give up
-		if (!_.isPlainObject(node)) {
-			throw new Error(Strings.ShoudBeType("node", "JSON", "Graph.addNode"));
-		}
-		if (Utils.isEmpty(node.id)) {
-			node.id = Utils.id();
-		}
-
-		if (Utils.isEmpty(node.typeName)) {
-			throw new Error(Strings.IsNil("typeName", "Graph.addNode"));
-		}
+	addNode(nodeSpec) {
+		const node = GraphUtils.getNodeFromSpecs(nodeSpec);
 		this.#nodes.push(node);
-
-		return node;
+		return nodeSpec;
 	}
 
 	/**
 	 * Adds an edge to the graph.
-	 * @param edge
+	 *
+	 * @example
+	 *
+	 * addEdge("1->2")
+	 * addEdge(1,2)
+	 * addEdge("a", "b")
+	 * addEdge([1,2])
+	 *
+	 * @param edgeSpec {*} An edge specification.
 	 * @return {any}
 	 */
-	addEdge(edge) {
-		if (Utils.isEmpty(edge)) {
-			throw new Error("Cannot add nil to the graph.");
+	addEdge(edgeSpec) {
+		const edge = GraphUtils.getEdgeFromSpecs(edgeSpec);
+		if (!this.nodeIdExists(edge.sourceId)) {
+			this.addNode(edge.sourceId);
 		}
-
-		if (!_.isPlainObject(edge)) {
-			throw new Error(Strings.ShoudBeType("edge", "JSON", "Graph.addEdge"));
+		if (!this.nodeIdExists(edge.targetId)) {
+			this.addNode(edge.targetId);
 		}
-		if (Utils.isEmpty(edge.typeName)) {
-			throw new Error(Strings.IsNil("typeName", "Graph.addEdge"));
-		}
-		if (Utils.isEmpty(edge.sourceId)) {
-			throw new Error(Strings.IsNil("sourceId", "Graph.addEdge"));
-		}
-		if (Utils.isEmpty(edge.targetId)) {
-			throw new Error(Strings.IsNil("targetId", "Graph.addEdge"));
-		}
-		if (Utils.isEmpty(edge.id)) {
-			edge.id = Utils.id();
-		}
-
 		this.#edges.push(edge);
-		return edge;
+		return edgeSpec;
+	}
+
+	nodeIdExists(id) {
+		return Utils.isDefined(this.getNodeById(id));
 	}
 
 	/**
@@ -798,6 +795,43 @@ class Graph {
 				this.dftTraverse(child, visitor, visitedIds, level + 1, _.clone(currentPath));
 			}
 		}
+	}
+
+	getCycle() {
+		// Copy the graph, converting all node references to String
+		graph = Object.assign(...Object.keys(graph).map((node) => ({ [node]: graph[node].map(String) })));
+
+		let queue = Object.keys(graph).map((node) => [node]);
+		while (queue.length) {
+			const batch = [];
+			for (const path of queue) {
+				const parents = graph[path[0]] || [];
+				for (const node of parents) {
+					if (node === path[path.length - 1]) return [node, ...path];
+					batch.push([node, ...path]);
+				}
+			}
+			queue = batch;
+		}
+	}
+
+	/**
+	 * Returns the adjacency list of the this graph.
+	 * @returns {{}}
+	 */
+	toAdjacencyList() {
+		const adj = {};
+		for (const node of this.#nodes) {
+			adj[node.id] = [];
+		}
+		for (const edge of this.#edges) {
+			if (adj[edge.sourceId]) {
+				adj[edge.sourceId].push(edge.targetId);
+			} else {
+				adj[edge.sourceId] = [edge.targetId];
+			}
+		}
+		return adj;
 	}
 }
 

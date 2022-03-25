@@ -1,6 +1,7 @@
 /*
  * A forest is a collection of trees.
  */
+
 class Forest {
 	constructor() {
 		this.#trees = [];
@@ -45,6 +46,7 @@ class Forest {
 	 * @return {Forest}
 	 */
 	static fromRoots(roots) {
+		const Tree = require("./tree");
 		const forest = new Forest();
 		if (_.isNil(roots) || roots.length === 0) {
 			return forest;

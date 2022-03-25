@@ -1,5 +1,5 @@
 const _ = require("lodash");
-const { Utils } = require("../");
+const {Utils} = require("../");
 
 const getNumber = Utils.getNumber;
 const getFloat = Utils.getFloat;
@@ -32,7 +32,7 @@ describe("Utils", function () {
 		expect(isEmpty(1)).toBeFalsy();
 		expect(isEmpty(true)).toBeFalsy();
 		expect(isEmpty(false)).toBeFalsy();
-		expect(isEmpty({ x: 4 })).toBeFalsy();
+		expect(isEmpty({x: 4})).toBeFalsy();
 		expect(isEmpty({})).toBeTruthy();
 		expect(isEmpty("   ")).toBeTruthy();
 		expect(isEmpty(2.3)).toBeFalsy();
@@ -75,29 +75,45 @@ describe("Utils", function () {
 	});
 
 	it("should get a JSON part", function () {
-		expect(Utils.getJsonPart({ a: { b: 2 } }, "a.b")).toEqual(2);
-		expect(Utils.getJsonPart({ a: { b: 2 } })).toEqual({ a: { b: 2 } });
-		expect(Utils.getJsonPart({ a: { b: 2 } }, "a.b.c")).toBeNull();
+		expect(Utils.getJsonPart({a: {b: 2}}, "a.b")).toEqual(2);
+		expect(Utils.getJsonPart({a: {b: 2}})).toEqual({a: {b: 2}});
+		expect(Utils.getJsonPart({a: {b: 2}}, "a.b.c")).toBeNull();
 	});
 
 	it("should deep replace", function () {
 		let obj = {
 			a: {
 				b: 4,
-				c: { r: "T" },
+				c: {r: "T"},
 			},
 		};
-		expect(Utils.deepReplace(obj, "s", "a")).toEqual({ a: "s" });
+		expect(Utils.deepReplace(obj, "s", "a")).toEqual({a: "s"});
 		obj = {
 			a: {
 				b: 4,
-				c: { r: "T" },
+				c: {r: "T"},
 			},
 		};
-		expect(Utils.deepReplace(obj, "s", "a.c")).toEqual({ a: { b: 4, c: "s" } });
+		expect(Utils.deepReplace(obj, "s", "a.c")).toEqual({a: {b: 4, c: "s"}});
 	});
 	it("should get temp paths", function () {
 		expect(Utils.getTempFilePath().slice(-3)).toEqual("tmp");
 		expect(Utils.getTempFilePath(null, "abc").slice(-3)).toEqual("abc");
+	});
+	it("should test for integers", function () {
+		expect(Utils.isInteger(3)).toBeTruthy();
+		expect(Utils.isInteger(3.0)).toBeTruthy();
+		expect(Utils.isInteger(3.03)).not.toBeTruthy();
+		expect(Utils.isInteger(-4)).toBeTruthy();
+		expect(Utils.isPositiveInteger(-4)).toBeFalsy();
+		expect(Utils.isPositiveInteger(0)).toBeFalsy();
+		expect(Utils.isPositiveInteger(0, true)).not.toBeFalsy();
+		expect(Utils.isPositiveInteger(5)).toBeTruthy();
+
+		expect(Utils.positiveNumberBetween(7, 0, 10)).toBeTruthy()
+		expect(Utils.positiveNumberBetween(7, 0, 10, false)).toBeTruthy()
+		expect(Utils.positiveNumberBetween(10, 0, 10, false)).not.toBeTruthy()
+		expect(Utils.positiveNumberBetween(0, 0, 10, false, true)).toBeTruthy()
+		expect(Utils.positiveNumberBetween(0, -30, -10, false, true)).toBeTruthy()
 	});
 });
