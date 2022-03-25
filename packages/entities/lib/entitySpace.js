@@ -1,10 +1,11 @@
-const {Strings, Utils} = require("@graphminer/Utils");
+const { Strings, Utils } = require("@graphminer/Utils");
 const _ = require("lodash");
 const EntityType = require("./entityType");
 const Entity = require("./entity");
 const ValueProperty = require("./valueProperty");
 const ObjectProperty = require("./objectProperty");
 const SpaceUtils = require("./utils");
+const assert = require("assert");
 
 /**
  * Gateway to entities.
@@ -50,8 +51,7 @@ class EntitySpace {
 		return this.#store;
 	}
 
-	constructor() {
-	}
+	constructor() {}
 
 	/**
 	 * Creates an in-memory entity space.
@@ -158,24 +158,24 @@ class EntitySpace {
 	}
 
 	/**
-	 * Initializes this entity manager.
-	 *
-	 * - no parameter: this will create an in-memory store
-	 * - one parameters: this can be a strings specifying the local storage or a GraphMiner context object (when using as part of the GraphMiner plugin mechanism)
-	 * - two parameters: a GraphMiner context and additional settings
+     * Initializes this entity manager.
+     *
+     * - no parameter: this will create an in-memory store
+     * - one parameters: this can be a strings specifying the local storage or a GraphMiner context object (when using as part of the GraphMiner plugin mechanism)
+     * - two parameters: a GraphMiner context and additional settings
 
-	 * @returns {Promise<void>}
-	 *
-	 * @example
-	 * // in-memory space with defaults (schema enforced)
-	 * const entities = new EntitySpace();
-	 * await entities.init();
-	 *
-	 * @example
-	 * // schema not enforced, properties and types are not checked
-	 * const entities = new EntitySpace();
-	 * await entities.init(null, {enforceSchema: false});
-	 */
+     * @returns {Promise<void>}
+     *
+     * @example
+     * // in-memory space with defaults (schema enforced)
+     * const entities = new EntitySpace();
+     * await entities.init();
+     *
+     * @example
+     * // schema not enforced, properties and types are not checked
+     * const entities = new EntitySpace();
+     * await entities.init(null, {enforceSchema: false});
+     */
 	async init(...options) {
 		const [amount, args] = Utils.getArguments(options);
 		if (!Utils.isEmpty(this.store)) {
@@ -232,23 +232,40 @@ class EntitySpace {
 
 	/**
 	 * Adds a new entity type.
-	 * @param options {EntityType|string} Either the name of the type or an EntityType.
+	 * @param entityTypeSpec {EntityType|string} Either the name of the type or an EntityType.
 	 * @returns {Promise<EntityType>}
 	 */
-	async addEntityType(options) {
-		if (_.isString(options)) {
-			const entityTypeName = options.toString().trim();
-			const entityType = new EntityType(entityTypeName);
-			await this.addEntityType(entityType);
-			return entityType;
-		} else if (options instanceof EntityType) {
-			const entityType = options;
+	async createEntityType(entityTypeSpec) {
+		return await this.addEntityType(entityTypeSpec);
+	}
+
+	/**
+	 * Adds a new entity type.
+	 * @param entityTypeSpec {EntityType|string} Either the name of the type or an EntityType.
+	 * @param valueProps
+	 * @returns {Promise<EntityType>}
+	 */
+	async addEntityType(entityTypeSpec, valueProps = null) {
+		let entityType = null;
+		if (_.isString(entityTypeSpec)) {
+			const entityTypeName = entityTypeSpec.toString().trim();
+			entityType = new EntityType(entityTypeName);
+		} else if (entityTypeSpec instanceof EntityType) {
+			entityType = entityTypeSpec;
 			// upsert will overwrite but adding it causes an exception if already there
 			const found = await this.getEntityType(entityType.name);
 			if (!Utils.isEmpty(found)) {
 				throw new Error(Strings.ExistsAlready(entityType.name, "Entities"));
 			}
-			await this.upsertEntityType(entityType);
+		}
+		if (entityType) {
+			entityType.space = this;
+			if (Utils.isDefined(valueProps)) {
+				for (const name in valueProps) {
+					entityType.addValueProperty(name, valueProps[name]);
+				}
+			}
+			await this.store.upsertEntityType(entityType);
 			return entityType;
 		} else {
 			throw new Error(Strings.WrongArguments("Entities.addEntityType"));
@@ -299,7 +316,7 @@ class EntitySpace {
 			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 		}
 		entityType.removeValueProperty(valuePropertyName);
-
+		assert(entityType.valueProperties[valuePropertyName] === undefined);
 		await this.upsertEntityType(entityType);
 		if (removeFromInstances) {
 			await this.store.removeFieldFromInstances(entityTypeName, valuePropertyName);
@@ -624,7 +641,7 @@ class EntitySpace {
 		if (Utils.isEmpty(entity)) {
 			throw new Error("The entity was not found in the space.");
 		}
-		return entity.getValue(valueName);
+		return entity.getValue(valueName) || null;
 	}
 
 	/**

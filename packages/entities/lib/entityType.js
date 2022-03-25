@@ -146,7 +146,7 @@ class EntityType extends EntityBase {
 	}
 
 	removeValueProperty(propertyName) {
-		delete this.#valueProperties[propertyName];
+		_.remove(this.#valueProperties, { name: propertyName });
 	}
 
 	removeObjectProperty(propertyName) {

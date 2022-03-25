@@ -188,15 +188,17 @@ class Entity extends EntityBase {
 
 	/**
 	 * Returns the value or object property.
-	 * @param options {string|ValueProperty|ObjectProperty} The name of a value/object property, a ValueProperty or an ObjectProperty.
+	 * @param propName {string|ValueProperty|ObjectProperty} The name of a value/object property, a ValueProperty or an ObjectProperty.
 	 * @returns {*|null|string}
 	 */
-	get(options) {
-		let found = this.getValue(options);
-		if (!Utils.isEmpty(found)) {
-			return found;
+	async get(propName) {
+		const keys = _.keys(this.values);
+		if (_.includes(keys, propName)) {
+			return this.getValue(propName);
 		}
-		return this.getObject(options);
+		if (this.space) {
+			return await this.space.getObject(this, propName);
+		}
 	}
 
 	/**
@@ -223,7 +225,7 @@ class Entity extends EntityBase {
 				return this.values[valuePropertyName] || null;
 			} else {
 				if (this.valuePropertyExists(valuePropertyName)) {
-					return this.values[valuePropertyName];
+					return this.values[valuePropertyName] || null;
 				}
 			}
 		} else if (valuePropSpec instanceof ValueProperty) {
