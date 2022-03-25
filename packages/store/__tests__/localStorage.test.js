@@ -197,7 +197,11 @@ describe("LocalStorage", function () {
 		}
 		const before = await storage.find({ f: true }, "Items");
 		expect(before.length).toBeGreaterThan(0);
-		await storage.removeFieldInCollection("Items", "f");
+		const upd = (obj) => {
+			delete obj["f"];
+			return obj;
+		};
+		await storage.findAndUpdateCollection("Items", upd);
 		const after = await storage.find({ f: true }, "Items");
 		expect(after.length).toEqual(0);
 	});
