@@ -823,7 +823,7 @@ class EntitySpace {
 	 * @param typeName {string}
 	 * @returns {Promise<*[]|*>}
 	 */
-	async getInstances(typeName) {
+	async getInstances(typeName = null) {
 		// todo: limit with count
 		const entityType = await this.getEntityType(typeName);
 
@@ -1008,6 +1008,30 @@ class EntitySpace {
 		}
 	}
 
+	async exportGraphJson() {
+		const g = {
+			nodes: [],
+			edges: [],
+		};
+		const ins = await this.getInstances();
+		for (const n of ins) {
+			g.nodes.push({
+				id: n.id,
+				name: n.name,
+			});
+			for (const linkName in n.objects) {
+				if (_.isString(n.objects[linkName])) {
+					g.edges.push({
+						source: n.id,
+						name: linkName,
+						target: n.objects[linkName],
+					});
+				}
+			}
+		}
+		return g;
+	}
+
 	/**
 	 * Imports the given instances into the store.
 	 * @param json {*[]} An array of instances.
@@ -1069,6 +1093,13 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Creates an object link between the given instances.
+	 * @param source {Entity|string} The source entity or id.
+	 * @param relationSpec
+	 * @param target {Entity|string} The target entity or id.
+	 * @returns {Promise<void>}
+	 */
 	async connect(source, relationSpec, target) {
 		const sourceId = SpaceUtils.getEntityIdFromSpecs(source);
 		if (_.isNil(sourceId)) {
