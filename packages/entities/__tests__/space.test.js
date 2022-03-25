@@ -1,9 +1,9 @@
 const _ = require("lodash");
-const {EntitySpace, EntityType, Entity} = require("..");
-const {faker} = require("@faker-js/faker");
+const { EntitySpace, EntityType, Entity } = require("..");
+const { faker } = require("@faker-js/faker");
 const path = require("path");
-const {Utils} = require("@graphminer/Utils");
-const {LocalStorage} = require("@graphminer/store");
+const { Utils } = require("@graphminer/Utils");
+const { LocalStorage } = require("@graphminer/store");
 const EntityStore = require("../lib/entityStore");
 
 async function NewSpace() {
@@ -33,20 +33,20 @@ describe("Entities", function () {
 		expect(await space.countEntities()).toEqual(0);
 
 		// can specify whatever you like since it's untyped
-		car = await space.createDetachedInstance("Car", {id: "a", name: "A", color: "orange"});
+		car = await space.createDetachedInstance("Car", { id: "a", name: "A", color: "orange" });
 		expect(car.name).toEqual("A");
 		expect(car.id).toEqual("a");
 		expect(await car.get("color")).toEqual("orange");
 
 		// can also use EntityType even though the type will not be remembered
 		let Car = new EntityType("Car");
-		car = await space.createDetachedInstance(Car, {id: "b", name: "B", color: "blue"});
+		car = await space.createDetachedInstance(Car, { id: "b", name: "B", color: "blue" });
 		expect(car.name).toEqual("B");
 		expect(car.id).toEqual("b");
 		expect(await car.get("color")).toEqual("blue");
 		// can even add/save the type but it will not be used
 		Car = await space.addEntityType("Car");
-		car = await space.createInstance(Car, {id: "c", name: "C", color: "yellow"});
+		car = await space.createInstance(Car, { id: "c", name: "C", color: "yellow" });
 		expect(car.name).toEqual("C");
 		expect(car.id).toEqual("c");
 		expect(car.getValue("color")).toEqual("yellow");
@@ -124,7 +124,7 @@ describe("Entities", function () {
 		await space.init(dbPath);
 		const bookType = await space.addEntityType("Book");
 		await space.addValueProperty(bookType, "title", "string");
-		const book = await space.upsertInstance(bookType, {title: "Topology"});
+		const book = await space.upsertInstance(bookType, { title: "Topology" });
 		let found = await space.getInstanceById(book.id);
 		expect(found).not.toBeNull();
 		expect(await found.get("title")).toEqual("Topology");
@@ -155,7 +155,7 @@ describe("Entities", function () {
 	it("should add instance without schema", async function () {
 		const space = await EntitySpace.inMemory();
 		space.enforceSchema = false;
-		await space.upsertInstance("Car", {id: "4", name: "a"});
+		await space.upsertInstance("Car", { id: "4", name: "a" });
 		let found = await space.getInstanceById("4");
 		expect(found).not.toBeNull();
 		expect(found.name).toEqual("a");
@@ -164,7 +164,7 @@ describe("Entities", function () {
 	it("should not allow anything without a schema", async function () {
 		const entities = await EntitySpace.inMemory();
 		await expect(async () => {
-			await entities.upsertInstance("Car", {id: 4, name: "a"});
+			await entities.upsertInstance("Car", { id: 4, name: "a" });
 		}).rejects.toThrow(Error);
 	});
 
@@ -390,10 +390,10 @@ describe("Entities", function () {
 	it("should check the given json", function () {
 		expect(() => EntityType.fromJSON(null)).toThrow(Error);
 		expect(() => EntityType.fromJSON({})).toThrow(Error);
-		expect(() => EntityType.fromJSON({typeName: "A"})).toThrow(Error);
-		expect(() => EntityType.fromJSON({typeName: "EntityType"})).toThrow(Error);
+		expect(() => EntityType.fromJSON({ typeName: "A" })).toThrow(Error);
+		expect(() => EntityType.fromJSON({ typeName: "EntityType" })).toThrow(Error);
 		// this should work though
-		const found = EntityType.fromJSON({typeName: "EntityType", name: "A"});
+		const found = EntityType.fromJSON({ typeName: "EntityType", name: "A" });
 		expect(found.name).toEqual("A");
 		expect(found.typeName).toEqual("EntityType");
 	});
@@ -480,12 +480,12 @@ describe("Entities", function () {
 	it("should raise an error on double creation", async function () {
 		const space = await EntitySpace.inMemory();
 		space.enforceSchema = false;
-		await space.createInstance("A", {id: "a", name: "a"});
+		await space.createInstance("A", { id: "a", name: "a" });
 	});
 	it("should remove an instance", async function () {
 		const space = await EntitySpace.inMemory();
 		space.enforceSchema = false;
-		const car = await space.createInstance("A", {id: "a", name: "a"});
+		const car = await space.createInstance("A", { id: "a", name: "a" });
 		await space.removeInstance(car.id);
 		const found = await space.getInstanceById(car.id);
 		expect(found).toBeNull();
@@ -496,12 +496,12 @@ describe("Entities", function () {
 		await space.addEntityType("A");
 		await space.addValueProperty("A", "color", "string");
 		const ins = await space.getInstances("A"); //?
-		const car = await space.createInstance("A", {id: "a", name: "a", color: "white"});
+		const car = await space.createInstance("A", { id: "a", name: "a", color: "white" });
 		let found = await space.getInstanceById(car.id);
 		expect(found.name).toEqual("a");
 		expect(found.getValue("color")).toEqual("white");
 		expect(found.getValue("name")).toEqual("a");
-		await space.upsertInstance("A", {id: "a", name: "a", color: "grey"});
+		await space.upsertInstance("A", { id: "a", name: "a", color: "grey" });
 		found = await space.getInstanceById(car.id);
 		expect(found.name).toEqual("a");
 		expect(found.getValue("color")).toEqual("grey");
@@ -612,12 +612,12 @@ describe("Entities", function () {
 		// integrity of the instance data by default.
 		// ===================================================================
 		const space = await EntitySpace.inMemory();
-		await space.addEntityType("Book", {author: "string"});
+		await space.addEntityType("Book", { author: "string" });
 		let Book = await space.getEntityType("Book");
 		expect(Book.valueProperties.length).toEqual(1);
 		expect(Book.valueProperties[0].name).toEqual("author");
-		await space.createInstance("Book", {author: "A"});
-		await space.createInstance("Book", {author: "B"});
+		await space.createInstance("Book", { author: "A" });
+		await space.createInstance("Book", { author: "B" });
 		let books = await space.getInstances("Book");
 		expect(books.length).toEqual(2);
 		expect(books[0].getValue("author")).toEqual("A");
@@ -629,5 +629,29 @@ describe("Entities", function () {
 		expect(books[1].getValue("author")).toBeNull();
 		Book = await space.getEntityType("Book");
 		expect(Book.valueProperties.length).toEqual(0);
+	});
+
+	it("should remove an object property", async function () {
+		const space = await EntitySpace.inMemory();
+		await space.addEntityType("Book", { title: "string" });
+		await space.addEntityType("Person", { country: "string" });
+		await space.addObjectProperty("Book", "hasAuthor", "Person");
+		let objProps = await space.getObjectProperties("Book");
+		expect(objProps.length).toEqual(1);
+		expect(objProps[0].name).toEqual("hasAuthor");
+		expect(objProps[0].objectType).toEqual("Person");
+		expect(objProps[0].subjectType).toEqual("Book");
+
+		let person = await space.createInstance("Person", "Lancaster");
+		let book = await space.createInstance("Book", "QFT");
+		await space.connect(book, "hasAuthor", person);
+		person = await space.getObject(book, "hasAuthor");
+		expect(person.name).toEqual("Lancaster");
+
+		// remove it
+		await space.removeObjectProperty("Book", "hasAuthor");
+		person = await space.getObject(book, "hasAuthor");
+		// the instance has been updated automatically
+		expect(person).toBeNull();
 	});
 });
