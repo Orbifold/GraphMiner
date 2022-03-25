@@ -1,6 +1,6 @@
 {
   "name": "@graphminer/graphs",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Generic graph utilities.",
   "author": "Swa <swa@orbifold.net>",
   "homepage": "https://graphminer.com",
@@ -24,6 +24,6 @@
     "test": "jest __tests__"
   },
   "dependencies": {
-    "@graphminer/utils": "^0.4.0"
+    "@graphminer/utils": "^0.4.1"
   }
 }
