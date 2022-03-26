@@ -2,7 +2,7 @@ const _ = require("lodash");
 const TripleNode = require("./tripleNode");
 const TripleEdge = require("./tripleEdge");
 const INodeBase = require("./iNodeBase");
-const { Utils, Strings } = require("@graphminer/Utils");
+const {Utils, Strings} = require("@graphminer/Utils");
 const TreeNode = require("./treeNode");
 const Forest = require("./forest");
 const GraphUtils = require("./graphUtils");
@@ -14,7 +14,6 @@ const GraphUtils = require("./graphUtils");
  * - The API can be used on its own, the only GraphMiner twist is the usage of 'typeName' in some place in order to handle serialization and compatibility with the GraphMiner EntitySpace.
  */
 class Graph {
-	typeName;
 	#groups;
 	/**
 	 * @type Array
@@ -30,7 +29,6 @@ class Graph {
 	 * @param data {any} The given data is simply assigned to the instance, no checks performed.
 	 */
 	constructor(data = null) {
-		this.typeName = "Graph";
 		this.id = Utils.id();
 		this.#groups = [];
 		this.#edges = [];
@@ -46,6 +44,13 @@ class Graph {
 	 */
 	static empty() {
 		return new Graph();
+	}
+
+	/**
+	 * Returns 'Graph' as type name for this instance.
+	 */
+	get typeName() {
+		return "Graph";
 	}
 
 	/**
@@ -75,12 +80,6 @@ class Graph {
 		return /\(([^->]+)\)(?=-\[([^->]+)\]->\(([^->]+)\))/gi;
 	}
 
-	/**
-	 * Returns 'Graph' as type name for this instance.
-	 */
-	get typeName() {
-		return this.typeName;
-	}
 
 	/**
 	 * Returns a copy of the edges in this graph.
@@ -805,7 +804,7 @@ class Graph {
 		}
 		sourceId = sourceId.toString().trim();
 		targetId = targetId.toString().trim();
-		return _.findIndex(this.#edges, { sourceId, targetId }) > -1;
+		return _.findIndex(this.#edges, {sourceId, targetId}) > -1;
 	}
 
 	/**
@@ -838,7 +837,7 @@ class Graph {
 	}
 
 	#removeNode(node) {
-		const removals = _.remove(this.#nodes, { id: node.id });
+		const removals = _.remove(this.#nodes, {id: node.id});
 		// only checking the edge if anything was actually removed
 		if (!_.isNil(removals) && removals.length > 0) {
 			const attachedEdgeIds = this.getIncomingEdges(node.id)

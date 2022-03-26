@@ -1,5 +1,5 @@
 const strings = require("./strings");
-const { faker } = require("@faker-js/faker");
+const {faker} = require("@faker-js/faker");
 const _ = require("lodash");
 const moment = require("moment");
 const fs = require("fs");
@@ -9,7 +9,7 @@ const path = require("path");
 const DateOffsetRegex = /([0-9]+ *d(ays?)?)? *([-+]?[0-9]+ *h(ours?)?)? *([0-9]+ *m(in(utes?)?)?)?/;
 // from here https://emailregex.com/
 const emailRegex =
-	/(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi;
+		  /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gi;
 const Utils = {
 	/**
 	 * Common validation rules.
@@ -47,7 +47,7 @@ const Utils = {
 			if (_.isNaN(num)) {
 				return "";
 			}
-			const formatted = new Intl.NumberFormat("en-UK", { style: "currency", currency, maximumFractionDigits: 2 }).format(num); // adds comma and two decimals
+			const formatted = new Intl.NumberFormat("en-UK", {style: "currency", currency, maximumFractionDigits: 2}).format(num); // adds comma and two decimals
 
 			return `${formatted}`;
 		} catch {
@@ -284,23 +284,23 @@ const Utils = {
 	},
 
 	/***
-     * Replaces in object d the property path with obj.
-     * If the path does not exist the value will not be created.
-     @example
-     const obj = {
+	 * Replaces in object d the property path with obj.
+	 * If the path does not exist the value will not be created.
+	 @example
+	 const obj = {
             a: {
                 b: 4,
                 c: {r: "T"}
             }
         }
-     deepReplace(obj, "s", "a") // give {a: "s"}
+	 deepReplace(obj, "s", "a") // give {a: "s"}
 
-     * @param rootObject {Object} The object in which to replace at the given path.
-     * @param path {String} Something like 'a.b.c'.
-     * @param substitute {Object} The object which replaces the value.
-     *
+	 * @param rootObject {Object} The object in which to replace at the given path.
+	 * @param path {String} Something like 'a.b.c'.
+	 * @param substitute {Object} The object which replaces the value.
+	 *
 
-     */
+	 */
 	deepReplace(rootObject, substitute, path) {
 		if (path === undefined) {
 			path = "/";
@@ -375,7 +375,7 @@ const Utils = {
 		}
 		if (fs.existsSync(filePath)) {
 			if (this.isDirectory(filePath)) {
-				fs.rmSync(filePath, { recursive: true, force: true });
+				fs.rmSync(filePath, {recursive: true, force: true});
 			} else {
 				fs.rmSync(filePath);
 			}
@@ -525,20 +525,9 @@ const Utils = {
 	 * @return {number}
 	 */
 	getInteger(d) {
-		if (_.isNil(d)) {
-			return NaN;
-		}
-		if (_.isNumber(d)) {
-			return Math.round(d);
-		}
-		if (_.isDate(d)) {
-			return d.getTime();
-		}
-		const durations = require("./durations");
-
-		const num = durations.durationToDays(d);
+		const num = Utils.getNumber(d)
 		if (_.isNaN(num)) {
-			return 0;
+			return NaN;
 		}
 		return Math.round(num);
 	},
