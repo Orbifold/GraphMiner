@@ -8,7 +8,7 @@ const Forest = require("./forest");
 const GraphUtils = require("./graphUtils");
 
 /**
- * Lightweight (directed) graph structure with some graph analytic methods.
+ * Lightweight (directed, simple, labelled) graph structure with some graph analytic methods.
  * - A node is something with an id.
  * - An edge is something with a sourceId and a targetId.
  * - The API can be used on its own, the only GraphMiner twist is the usage of 'typeName' in some place in order to handle serialization and compatibility with the GraphMiner EntitySpace.
@@ -146,6 +146,9 @@ class Graph {
 				description: u?.description,
 				typeName: u?.type || u?.data?.typeName || typeName,
 			};
+			if (Utils.isEmpty(u.name)) {
+				u.name = u.id;
+			}
 			return _.assign(entity, u?.data);
 		};
 	}
@@ -191,6 +194,18 @@ class Graph {
 		return g;
 	}
 
+	/**
+	 * Creates a graph from the given edge array.
+	 *
+	 * @example
+	 *
+	 * Graph.fromEdgeArray([[1,2],[2,3])
+	 * Graph.fromEdgeArray(["1->2",[2,3])
+	 * Graph.fromEdgeArray(["1->2",["2","3"])
+	 *
+	 * @param edges
+	 * @returns {Graph|null}
+	 */
 	static fromEdgeArray(edges) {
 		const g = Graph.empty();
 		if (_.isNil(edges)) {
@@ -206,6 +221,81 @@ class Graph {
 			}
 		}
 		return g;
+	}
+
+	/**
+	 * @see https://en.wikipedia.org/wiki/Trivial_Graph_Format
+	 * @param data
+	 */
+	static fromTrivial(data) {
+		// todo: trivial format
+		throw new Error(Strings.NotImplementedMethod());
+	}
+
+	/**
+	 * @see https://en.wikipedia.org/wiki/Graph_Modelling_Language
+	 * @param data
+	 */
+	static fromGml(data) {
+		// todo: GML format
+		throw new Error(Strings.NotImplementedMethod());
+	}
+
+	/**
+	 * Imports a graph from an arrow definition.
+	 *
+	 * @example
+	 *
+	 * Graph.fromArrows("a->b->c")
+	 * Graph.fromArrows(`
+	 * a->e
+	 * e->e
+	 * `)
+	 * Graph.fromArrows(["a->b->c","c->b"])
+	 * @param data {string|string[]}
+	 */
+	static fromArrows(data) {
+		const g = Graph.empty();
+		const getEdgeList = (data) =>
+			data
+				.split("->")
+				.map((u) => u.trim())
+				.filter((u) => u.length > 0);
+		if (Utils.isEmpty(data)) {
+			return g;
+		}
+		let edgeList;
+		if (_.isArray(data)) {
+			for (let item of data) {
+				item = item.toString();
+				edgeList = getEdgeList(item);
+				if (edgeList.length === 0) {
+					continue;
+				} else if (edgeList.length === 1) {
+					g.addNode(edgeList[0]);
+				} else {
+					for (let i = 0; i < edgeList.length - 1; i++) {
+						g.addEdge(edgeList[i], edgeList[i + 1]);
+					}
+				}
+			}
+			return g;
+		} else if (_.isString(data)) {
+			edgeList = getEdgeList(data);
+			if (edgeList.length === 0) {
+				return g;
+			} else if (edgeList.length === 1) {
+				g.addNode(edgeList[0]);
+				return g;
+			} else {
+				for (let i = 0; i < edgeList.length - 1; i++) {
+					g.addEdge(edgeList[i], edgeList[i + 1]);
+				}
+				return g;
+			}
+		} else {
+			throw new Error(Strings.ShoudBeType("fromArrows", "string or string array", "Graph.fromArrows"));
+		}
 	}
 
 	/**
@@ -366,11 +456,8 @@ class Graph {
 			}
 		}
 		for (const e of g.edges) {
+			// the method ensure that the graph remains simple and missing nodes are added
 			this.addEdge(e);
-			const found = this.getEdgeById(e.id);
-			if (_.isNil(found)) {
-				this.addNode(e);
-			}
 		}
 		return this;
 	}
@@ -663,20 +750,62 @@ class Graph {
 	 * @param edgeSpec {*} An edge specification.
 	 * @return {any}
 	 */
-	addEdge(edgeSpec) {
-		const edge = GraphUtils.getEdgeFromSpecs(edgeSpec);
+	addEdge(...edgeSpec) {
+		const edge = GraphUtils.getEdgeFromSpecs(...edgeSpec);
 		if (!this.nodeIdExists(edge.sourceId)) {
 			this.addNode(edge.sourceId);
 		}
 		if (!this.nodeIdExists(edge.targetId)) {
 			this.addNode(edge.targetId);
 		}
-		this.#edges.push(edge);
-		return edgeSpec;
+		// ensure the graph remains simple
+		if (!this.edgeExists(edge)) {
+			if (Utils.isEmpty(edge.id)) {
+				edge.id = Utils.id();
+			}
+			this.#edges.push(edge);
+		}
+		return this;
+	}
+
+	addEdges(...edges) {
+		const [count, args] = Utils.getArguments(edges);
+		switch (count) {
+			case 0:
+				return;
+			case 1:
+				return this.addEdge(args[0]);
+			default:
+				args.forEach((u) => this.addEdge(u));
+				return this;
+		}
 	}
 
 	nodeIdExists(id) {
 		return Utils.isDefined(this.getNodeById(id));
+	}
+
+	get hasLoops() {
+		return _.filter(this.#edges, (u) => u.sourceId === u.targetId).length > 0;
+	}
+
+	edgeExists(...edgeSpec) {
+		// if just an id is given
+		if (edgeSpec.length === 1 && _.isString(edgeSpec[0])) {
+			return _.filter(this.#edges, (e) => e.id === edgeSpec[0].toString().trim()).length > 0;
+		}
+		const edge = GraphUtils.getEdgeFromSpecs(...edgeSpec);
+		let sourceId = edge.sourceId;
+		let targetId = edge.targetId;
+		if (Utils.isEmpty(sourceId)) {
+			throw new Error(Strings.ShoudBeType("edgeExists", "string or number", "Graph.edgeExists"));
+		}
+		if (Utils.isEmpty(targetId)) {
+			throw new Error(Strings.ShoudBeType("edgeExists", "string or number", "Graph.edgeExists"));
+		}
+		sourceId = sourceId.toString().trim();
+		targetId = targetId.toString().trim();
+		return _.findIndex(this.#edges, { sourceId, targetId }) > -1;
 	}
 
 	/**
@@ -797,15 +926,19 @@ class Graph {
 		}
 	}
 
+	/**
+	 * This will return the shortest cycle, if any.
+	 * @returns {string[]|null}
+	 */
 	getCycle() {
 		// Copy the graph, converting all node references to String
-		graph = Object.assign(...Object.keys(graph).map((node) => ({ [node]: graph[node].map(String) })));
+		const adj = this.toAdjacencyList(); //?
 
-		let queue = Object.keys(graph).map((node) => [node]);
+		let queue = Object.keys(adj).map((node) => [node]);
 		while (queue.length) {
 			const batch = [];
 			for (const path of queue) {
-				const parents = graph[path[0]] || [];
+				const parents = adj[path[0]] || [];
 				for (const node of parents) {
 					if (node === path[path.length - 1]) return [node, ...path];
 					batch.push([node, ...path]);
@@ -813,10 +946,19 @@ class Graph {
 			}
 			queue = batch;
 		}
+		return null;
+	}
+
+	get hasCycles() {
+		return !_.isNil(this.getCycle());
+	}
+
+	get isAcyclic() {
+		return !this.hasCycles;
 	}
 
 	/**
-	 * Returns the adjacency list of the this graph.
+	 * Returns the adjacency list of this graph.
 	 * @returns {{}}
 	 */
 	toAdjacencyList() {
