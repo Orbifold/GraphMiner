@@ -2,7 +2,7 @@ const _ = require("lodash");
 const TripleNode = require("./tripleNode");
 const TripleEdge = require("./tripleEdge");
 const INodeBase = require("./iNodeBase");
-const {Utils, Strings} = require("@graphminer/Utils");
+const { Utils, Strings } = require("@graphminer/Utils");
 const TreeNode = require("./treeNode");
 const Forest = require("./forest");
 const GraphUtils = require("./graphUtils");
@@ -14,15 +14,19 @@ const GraphUtils = require("./graphUtils");
  * - The API can be used on its own, the only GraphMiner twist is the usage of 'typeName' in some place in order to handle serialization and compatibility with the GraphMiner EntitySpace.
  */
 class Graph {
-	#groups;
+	#groups = [];
 	/**
 	 * @type Array
 	 */
-	#edges;
+	#edges = [];
 	/**
 	 * @type Array
 	 */
-	#nodes;
+	#nodes = [];
+	name = null;
+	description = null;
+
+	id;
 
 	/**
 	 * Instantiates a new Graph.
@@ -79,7 +83,6 @@ class Graph {
 	static get regWithEdge() {
 		return /\(([^->]+)\)(?=-\[([^->]+)\]->\(([^->]+)\))/gi;
 	}
-
 
 	/**
 	 * Returns a copy of the edges in this graph.
@@ -255,11 +258,29 @@ class Graph {
 	 */
 	static fromArrows(data) {
 		const g = Graph.empty();
-		const getEdgeList = (data) =>
-			data
-				.split("->")
-				.map((u) => u.trim())
-				.filter((u) => u.length > 0);
+		const getEdgeList = (data) => {
+			const lines = data.trim().split("\n");
+			let total = [];
+			for (const line of lines) {
+				let ar = [];
+				const sequence = line
+					.split("->")
+					.map((u) => u.trim())
+					.filter((u) => u.length > 0);
+
+				if (sequence.length === 0) {
+					continue;
+				} else if (sequence.length === 1) {
+					ar.push([sequence[0]]);
+				} else {
+					for (let i = 0; i < sequence.length - 1; i++) {
+						ar.push([sequence[i], sequence[i + 1]]);
+					}
+				}
+				total = total.concat(ar);
+			}
+			return total;
+		};
 		if (Utils.isEmpty(data)) {
 			return g;
 		}
@@ -268,33 +289,62 @@ class Graph {
 			for (let item of data) {
 				item = item.toString();
 				edgeList = getEdgeList(item);
-				if (edgeList.length === 0) {
-					continue;
-				} else if (edgeList.length === 1) {
-					g.addNode(edgeList[0]);
-				} else {
-					for (let i = 0; i < edgeList.length - 1; i++) {
-						g.addEdge(edgeList[i], edgeList[i + 1]);
+				edgeList.forEach((u) => {
+					if (u.length === 1) {
+						g.addNode(u[0]);
+					} else {
+						g.addEdge(u);
 					}
-				}
+				});
 			}
 			return g;
 		} else if (_.isString(data)) {
 			edgeList = getEdgeList(data);
-			if (edgeList.length === 0) {
-				return g;
-			} else if (edgeList.length === 1) {
-				g.addNode(edgeList[0]);
-				return g;
-			} else {
-				for (let i = 0; i < edgeList.length - 1; i++) {
-					g.addEdge(edgeList[i], edgeList[i + 1]);
+			edgeList.forEach((u) => {
+				if (u.length === 1) {
+					g.addNode(u[0]);
+				} else {
+					g.addEdge(u);
 				}
-				return g;
-			}
+			});
+			return g;
 		} else {
 			throw new Error(Strings.ShoudBeType("fromArrows", "string or string array", "Graph.fromArrows"));
 		}
+	}
+
+	/**
+	 * Imports the Matrix Market format.
+	 * @see https://networkrepository.com/mtx-matrix-market-format.html
+	 * @param data {string|string[]}
+	 */
+	static fromMtx(data) {
+		const g = Graph.empty();
+		g.description = "MTX import";
+		if (Utils.isEmpty(data)) {
+			return g;
+		}
+		if (_.isString(data)) {
+			data = data
+				.split("\n")
+				.map((l) => l.trim())
+				.filter((l) => l.length > 0);
+			return Graph.fromMtx(data);
+		}
+		const header = data.shift();
+		if (header.indexOf("%MatrixMarket") < 0) {
+			throw new Error("Probably not an MTX format.");
+		}
+		// next line is the size of the matrix
+		data.shift();
+
+		for (let i = 0; i < data.length; i++) {
+			const [s, t] = data[i].split(" ");
+			g.addNode(s);
+			g.addNode(t);
+			g.addEdge(s, t);
+		}
+		return g;
 	}
 
 	/**
@@ -505,7 +555,7 @@ class Graph {
 			id: this.id,
 			name: this.name,
 			description: this.description,
-			odes: this.#nodes,
+			nodes: this.#nodes,
 			edges: this.#edges,
 			groups: this.#groups,
 		};
@@ -732,7 +782,9 @@ class Graph {
 	 */
 	addNode(nodeSpec) {
 		const node = GraphUtils.getNodeFromSpecs(nodeSpec);
-		this.#nodes.push(node);
+		if (!this.nodeIdExists(node.id)) {
+			this.#nodes.push(node);
+		}
 		return nodeSpec;
 	}
 
@@ -804,7 +856,7 @@ class Graph {
 		}
 		sourceId = sourceId.toString().trim();
 		targetId = targetId.toString().trim();
-		return _.findIndex(this.#edges, {sourceId, targetId}) > -1;
+		return _.findIndex(this.#edges, { sourceId, targetId }) > -1;
 	}
 
 	/**
@@ -837,7 +889,7 @@ class Graph {
 	}
 
 	#removeNode(node) {
-		const removals = _.remove(this.#nodes, {id: node.id});
+		const removals = _.remove(this.#nodes, { id: node.id });
 		// only checking the edge if anything was actually removed
 		if (!_.isNil(removals) && removals.length > 0) {
 			const attachedEdgeIds = this.getIncomingEdges(node.id)
@@ -973,6 +1025,39 @@ class Graph {
 			}
 		}
 		return adj;
+	}
+
+	/**
+	 * Returns a dictionary with for each node id its degree.
+	 * @returns {{}}
+	 */
+	getDegrees() {
+		const dic = {};
+		// all nodes initially with degree zero
+		this.#nodes.forEach((n) => (dic[n.id] = 0));
+		this.#edges.forEach((e) => {
+			dic[e.sourceId] += 1;
+			dic[e.targetId] += 1;
+		});
+		return dic;
+	}
+
+	get maxDegree() {
+		return _.max(_.values(this.getDegrees()));
+	}
+
+	get minDegree() {
+		return _.min(_.values(this.getDegrees()));
+	}
+
+	/**
+	 * Returns an array representing the histogram of degrees.
+	 * @param bins {number} The amount of bins in the histogram.
+	 * @returns {[*]|any[]}
+	 */
+	degreeHistogram(bins = 10) {
+		const data = _.values(this.getDegrees());
+		return Utils.histogram(data, bins);
 	}
 }
 

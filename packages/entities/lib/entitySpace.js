@@ -63,6 +63,15 @@ class EntitySpace {
 		return space;
 	}
 
+	static async browser(name = null) {
+		const space = new EntitySpace();
+		await space.init(null, {
+			env: "BROWSER",
+			filePath: name ?? "graphminer",
+		});
+		return space;
+	}
+
 	/**
 	 * Creates an instance for the given type name and specs.
 	 * @param typeName {string} The type name.

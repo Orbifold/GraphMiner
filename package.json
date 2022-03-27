@@ -3,13 +3,17 @@
   "private": true,
   "license": "GPL-3.0-only",
   "devDependencies": {
-    "lerna": "^4.0.0",
-    "better-docs": "^2.3.2"
+    "better-docs": "^2.3.2",
+    "lerna": "^4.0.0"
   },
   "scripts": {
     "docs": "jsdoc -c ./jsdoc.json",
     "bootstrap": "lerna clean & lerna bootstrap",
     "start": "cd ./packages/client & npm run start",
     "test": "jest"
-  }
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "dependencies": {}
 }

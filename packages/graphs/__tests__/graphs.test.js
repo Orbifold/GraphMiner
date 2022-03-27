@@ -406,4 +406,42 @@ describe("Graphs", function () {
 		expect(g.hasCycles).toBeFalsy();
 		expect(g.isAcyclic).toBeTruthy();
 	});
+	it("should import mtx", function () {
+		const data = `
+		%MatrixMarket and so on
+		2 4 5
+		1 2
+		2 3
+		3 4
+		`;
+		const g = Graph.fromMtx(data);
+		expect(g.nodes.length).toEqual(4);
+		expect(g.edges.length).toEqual(3);
+		expect(() => {
+			Graph.fromMtx("something");
+		}).toThrow(Error);
+	});
+	it("should get degrees", function () {
+		let g = Graph.fromArrows(`
+		1->1
+		1->2
+		2->2
+		`);
+		expect(g.getDegrees()).toEqual({ 1: 3, 2: 3 });
+
+		g = Graph.fromArrows(`
+		1->2
+		1->2
+		2->3
+		`);
+		expect(g.getDegrees()).toEqual({ 1: 1, 2: 2, 3: 1 });
+
+		g = Graph.fromArrows(`
+		1->2
+		1->3
+		1->4
+		1->5
+		`);
+		expect(g.getDegrees()).toEqual({ 1: 4, 2: 1, 3: 1, 4: 1, 5: 1 });
+	});
 });

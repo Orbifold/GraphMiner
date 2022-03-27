@@ -188,20 +188,7 @@ class LocalStorage extends Store {
 					return new Promise((resolve, reject) => {
 						this.#createDatabase(that.#getBrowserSettings(resolve));
 					});
-				// this.#db = new loki("stuff.db", {
-				// 	env: "BROWSER",
-				// 	autoload: true,
-				// 	autosave: true,
-				// 	autosaveInterval: 4000,
-				// });
-				//
-				// let coll = this.#db.getCollection("users");
-				// if (!coll) {
-				// 	coll = this.#db.addCollection("users");
-				// }
-				// coll.insert({ name: Utils.randomId() });
-				// console.log(coll.find({}).map((u) => u.name));
-				// return;
+
 				default:
 					this.#inMemory = false;
 					return new Promise((resolve, reject) => {
@@ -211,19 +198,28 @@ class LocalStorage extends Store {
 					});
 			}
 		} else {
-			return new Promise((resolve, reject) => {
-				const defaults = that.#getDefaultSettings(resolve);
-				const options = _.assign(defaults, settings);
-				this.#inMemory = Utils.isEmpty(options.autosave) ? false : !options.autosave;
-				if (this.#inMemory) {
-					options.autoloadCallback = null;
-					options.autoload = false;
-					this.#db = new loki("inMemory.db");
-					resolve();
-				} else {
-					this.#createDatabase(options);
-				}
-			});
+			if (settings?.env === "BROWSER") {
+				this.#inMemory = true;
+				return new Promise((resolve, reject) => {
+					const browserSettings = that.#getBrowserSettings(resolve);
+					browserSettings.filePath = settings.filePath ?? "graphminer";
+					this.#createDatabase(browserSettings);
+				});
+			} else {
+				return new Promise((resolve, reject) => {
+					const defaults = that.#getDefaultSettings(resolve);
+					const options = _.assign(defaults, settings);
+					this.#inMemory = Utils.isEmpty(options.autosave) ? false : !options.autosave;
+					if (this.#inMemory) {
+						options.autoloadCallback = null;
+						options.autoload = false;
+						this.#db = new loki("inMemory.db");
+						resolve();
+					} else {
+						this.#createDatabase(options);
+					}
+				});
+			}
 		}
 	}
 

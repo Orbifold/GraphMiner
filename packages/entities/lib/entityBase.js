@@ -23,6 +23,12 @@ class EntityBase {
 	id;
 
 	/**
+	 * For time filtering and alike.
+	 * @type number|null
+	 */
+	timestamp;
+
+	/**
 	 * Base class for entities and types.
 	 * @abstract
 	 * @constructor
@@ -42,6 +48,7 @@ class EntityBase {
 		this.id = Utils.id();
 		this.name = name;
 		this.description = null;
+		this.timestamp = null;
 	}
 
 	/**
