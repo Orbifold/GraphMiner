@@ -25,5 +25,8 @@
   },
   "dependencies": {
     "@graphminer/utils": "^0.4.2"
+  },
+  "bugs": {
+    "url": "https://github.com/Orbifold/GraphMiner/issues"
   }
 }

@@ -5,7 +5,26 @@ import Vuetify from "vuetify/lib/framework";
 Vue.use(Vuetify);
 
 export default new Vuetify({
-	theme: { dark: true },
+	theme: {
+		dark: false,
+		themes: {
+			light: {
+				primary: "#3e5d8c",
+				secondary: "#5d8c3e",
+				accent: "#8c3e5d",
+				error: "#c03e3e",
+				primary0: "#fffffe",
+				primary1: "#dbe3ef",
+				primary2: "#b8c7df",
+				primary3: "#94acd0",
+				primary4: "#7190c0",
+				primary5: "#4e75b0",
+				primary6: "#3e5d8d",
+				primary7: "#2e466a",
+				primary8: "#1f2e46",
+			},
+		},
+	},
 	icons: {
 		iconfont: "mdi",
 		values: {

@@ -150,7 +150,7 @@
 	@Component({
 		components: { Splitpanes, Pane },
 	})
-	export default class OntologyDesigner extends Vue {
+	export default class OntologyDesignerView extends Vue {
 		// region Fields
 		showRight: boolean = true;
 		showLeft: boolean = false;

@@ -57,13 +57,20 @@ class EntitySpace {
 	 * Creates an in-memory entity space.
 	 * @returns {Promise<EntitySpace>}
 	 */
-	static async inMemory() {
+	static async inMemory(spaceName = null) {
 		const space = new EntitySpace();
 		await space.init("memory");
+		await space.setMetadata("name", spaceName);
 		return space;
 	}
 
-	static async browser(name = null) {
+	/**
+	 * Creates a space in the browser (the Local Storage).
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+	 * @param [name="graphminer"] {string} The name of the local storage
+	 * @returns {Promise<EntitySpace>}
+	 */
+	static async browser(name = "graphminer") {
 		const space = new EntitySpace();
 		await space.init(null, {
 			env: "BROWSER",

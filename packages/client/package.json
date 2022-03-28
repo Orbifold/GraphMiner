@@ -7,6 +7,9 @@
   "description": "GraphMiner analytics and graph visualization client.",
   "author": "Orbifold Consulting <info@orbifold.net>",
   "homepage": "https://graphminer.io",
+  "bugs": {
+    "url": "https://github.com/Orbifold/GraphMiner/issues"
+  },
   "engines": {
     "node": "14.18.2"
   },

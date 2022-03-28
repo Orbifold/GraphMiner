@@ -1,22 +1,26 @@
-import LocalDataPage from "@/views/LocalDataPage.vue";
-import OntologyDesigner from "@/views/OntologyDesigner.vue";
+import LocalDataView from "@/views/LocalDataView.vue";
+import OntologyDesignerView from "@/views/OntologyDesignerView.vue";
+import ProjectsView from "@/views/ProjectsView.vue";
 
 export default [
 	{
 		path: "/",
 		name: "Home",
-		component: LocalDataPage,
+		component: ProjectsView,
 	},
 	{
 		path: "/ontologyDesigner",
 		name: "Ontology Designer",
-		component: OntologyDesigner,
+		component: OntologyDesignerView,
 	},
 	{
 		path: "/localData",
 		name: "Local Data",
-		component: LocalDataPage,
+		component: LocalDataView,
 	},
-
-
+	{
+		path: "*",
+		name: "Projects",
+		component: ProjectsView,
+	},
 ];

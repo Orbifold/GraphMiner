@@ -89,7 +89,7 @@
 	@Component({
 		components: { Splitpanes, Pane },
 	})
-	export default class LocalDataPage extends Vue {
+	export default class LocalDataView extends Vue {
 		showRight: boolean = false;
 		showLeft: boolean = false;
 		showTop: boolean = false;
