@@ -700,6 +700,14 @@ class Graph {
 		return this.#edges.filter((e) => e.targetId === id);
 	}
 
+	getEdges(id) {
+		return this.#edges.filter((e) => e.targetId === id || e.sourceId === id);
+	}
+
+	getNeighbors(id) {
+		return this.getParents(id).concat(this.getChildren(id));
+	}
+
 	/**
 	 * Returns the nodes with an edge towards the specified id.
 	 * @param id
@@ -722,16 +730,16 @@ class Graph {
 		return coll;
 	}
 
-	getChildren(something) {
-		if (!_.isString(something)) {
-			something = something.id;
+	getChildren(id) {
+		if (!_.isString(id)) {
+			id = id.id;
 		}
 		const coll = [];
-		const node = this.getNodeById(something);
+		const node = this.getNodeById(id);
 		if (_.isNil(node)) {
 			return coll;
 		}
-		const edges = this.getOutgoingEdges(something);
+		const edges = this.getOutgoingEdges(id);
 		const isInCollection = (n) => coll.filter((x) => x.id === n.id).length > 0;
 		edges.forEach((e) => {
 			const item = this.getNodeById(e.targetId);
@@ -951,7 +959,21 @@ class Graph {
 			throw new Error("The starting node for the traversal is not part of the graph.");
 		}
 		const visitedIds = [];
-		this.dftTraverse(startNode, visitor, visitedIds, 0);
+		this.#dftTraverse(startNode, visitor, visitedIds, 0);
+	}
+
+	bft(visitor, startNode) {
+		const found = this.getNodeById(startNode.id);
+		if (_.isNil(found)) {
+			throw new Error("The starting node for the traversal is not part of the graph.");
+		}
+		const queue = [startNode];
+		while (queue.length) {
+			const currNode = queue.shift();
+			visitor(currNode);
+			const children = this.getChildren(currNode.id);
+			queue.push(...children);
+		}
 	}
 
 	/**
@@ -962,7 +984,7 @@ class Graph {
 	 * @param level {number} The current depth.
 	 * @param currentPath {INodeBase[]} The sequence of nodes used to reach the current node.
 	 */
-	dftTraverse(node, visitor, visitedIds, level = 0, currentPath = []) {
+	#dftTraverse(node, visitor, visitedIds, level = 0, currentPath = []) {
 		if (_.includes(visitedIds, node.id)) {
 			throw new Error("Graph contains loops, cannot perform a full traversal.");
 		}
@@ -972,7 +994,7 @@ class Graph {
 		visitedIds.push(node.id);
 		if (children.length > 0) {
 			for (const child of children) {
-				this.dftTraverse(child, visitor, visitedIds, level + 1, _.clone(currentPath));
+				this.#dftTraverse(child, visitor, visitedIds, level + 1, _.clone(currentPath));
 			}
 		}
 	}
@@ -983,7 +1005,7 @@ class Graph {
 	 */
 	getCycle() {
 		// Copy the graph, converting all node references to String
-		const adj = this.toAdjacencyList(); //?
+		const adj = this.toAdjacencyList();
 
 		let queue = Object.keys(adj).map((node) => [node]);
 		while (queue.length) {
@@ -1042,10 +1064,18 @@ class Graph {
 		return dic;
 	}
 
+	/**
+	 * Returns the maximum degree in this graph.
+	 * @returns {number}
+	 */
 	get maxDegree() {
 		return _.max(_.values(this.getDegrees()));
 	}
 
+	/**
+	 * Returns the minimum degree in this graph.
+	 * @returns {number}
+	 */
 	get minDegree() {
 		return _.min(_.values(this.getDegrees()));
 	}
@@ -1058,6 +1088,54 @@ class Graph {
 	degreeHistogram(bins = 10) {
 		const data = _.values(this.getDegrees());
 		return Utils.histogram(data, bins);
+	}
+
+	/**
+	 * Returns the component of the given id in the shape of node ids.
+	 * If the id is not in the graph an empty array is returned.
+	 * @param id {string} A node id.
+	 * @returns {*[]}
+	 */
+	getComponentOf(id) {
+		const component = [];
+		if (!this.nodeIdExists(id)) {
+			return component;
+		}
+		const queue = [id];
+		const visited = new Set();
+
+		while (queue.length > 0) {
+			const current = queue.pop();
+
+			if (!visited.has(current)) {
+				component.push(current);
+				visited.add(current);
+				const neighbors = this.getNeighbors(current).map((n) => n.id);
+				for (let neighbor of neighbors) {
+					if (!visited.has(neighbor)) {
+						queue.push(neighbor);
+					}
+				}
+			}
+		}
+
+		return component;
+	}
+
+	/**
+	 * Returns the weakly connected components of this graph.
+	 * @returns {*[]} An array of arrays, each representing the id's of a component.
+	 */
+	getComponents() {
+		const all = this.nodes.map((n) => n.id);
+		const components = [];
+		while (all.length > 0) {
+			const id = all.pop();
+			const component = this.getComponentOf(id);
+			components.push(component);
+			_.pull(all, ...component);
+		}
+		return components;
 	}
 }
 

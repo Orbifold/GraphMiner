@@ -22,7 +22,7 @@
 
 			<div>
 				<v-fade-transition mode="out-in">
-					<router-view></router-view>
+					<router-view v-if="isInitialized"></router-view>
 				</v-fade-transition>
 			</div>
 		</v-main>
@@ -52,6 +52,7 @@
 		leftDrawer: boolean = null;
 		rightDrawer: boolean = null;
 		version: string = null;
+		isInitialized: boolean = false;
 
 		beforeMount() {
 			this.version = this.$ambientService.graphMinerVersion;
@@ -60,6 +61,9 @@
 		mounted() {
 			this.$ambientService.confirm = this.confirm;
 			this.$ambientService.showAbout = this.showAbout;
+			this.$dataService.init().then(() => {
+				this.isInitialized = true;
+			});
 		}
 
 		async confirm(title: string, message: string) {

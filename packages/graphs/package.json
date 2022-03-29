@@ -26,6 +26,9 @@
   "dependencies": {
     "@graphminer/utils": "^0.4.2"
   },
+  "devDependencies": {
+    "jest": "^27.4.5"
+  },
   "bugs": {
     "url": "https://github.com/Orbifold/GraphMiner/issues"
   }

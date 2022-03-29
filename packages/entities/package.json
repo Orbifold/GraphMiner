@@ -27,6 +27,7 @@
   "dependencies": {
     "@graphminer/store": "^0.4.2",
     "@graphminer/utils": "^0.4.2",
+    "@graphminer/graphs": "^0.4.2",
     "@types/winston": "^2.4.4",
     "js-yaml": "^4.1.0",
     "npmlog": "^6.0.0",

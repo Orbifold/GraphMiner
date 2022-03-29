@@ -7,5 +7,5 @@ module.exports = {
 	jsxBracketSameLine: true,
 	arrowParens: "always",
 	vueIndentScriptAndStyle: true,
-	printWidth: 300,
+	printWidth: 1300,
 };

@@ -1,4 +1,5 @@
 const { Utils, Strings } = require("@graphminer/utils");
+const _ = require("lodash");
 
 const Graph = require("../lib/graph");
 const TripleNode = require("../lib/tripleNode");
@@ -6,6 +7,7 @@ const TripleEdge = require("../lib/tripleEdge");
 const Tree = require("../lib/tree");
 const GraphTriple = require("../lib/graphTriple");
 const GraphUtils = require("../lib/graphUtils");
+const { NamedGraph } = require("../lib");
 
 // file.only
 describe("Graphs", function () {
@@ -443,5 +445,69 @@ describe("Graphs", function () {
 		1->5
 		`);
 		expect(g.getDegrees()).toEqual({ 1: 4, 2: 1, 3: 1, 4: 1, 5: 1 });
+	});
+	it("should get the component of a node", function () {
+		let g = Graph.fromArrows(`
+		1->2->3->4
+		5->6
+		`);
+		let c = g.getComponentOf("2");
+		expect(c.map((u) => parseInt(u)).sort()).toEqual([1, 2, 3, 4]);
+
+		c = g.getComponentOf("6");
+		expect(c.map((u) => parseInt(u)).sort()).toEqual([5, 6]);
+
+		// cycles and all
+		g = Graph.fromArrows(`
+		1->2->3->4->2
+		5->6
+		`);
+		c = g.getComponentOf("2");
+		expect(c.map((u) => parseInt(u)).sort()).toEqual([1, 2, 3, 4]);
+
+		c = g.getComponentOf("6");
+		expect(c.map((u) => parseInt(u)).sort()).toEqual([5, 6]);
+
+		c = g.getComponentOf("36");
+		expect(Utils.isEmpty(c)).toBeTruthy();
+	});
+	it("should do a dft", function () {
+		let g = Graph.fromArrows(`
+		1->2->4
+		2->3->5
+		`);
+		const acc = [];
+		const visitor = (n) => {
+			acc.push(parseInt(n.id));
+		};
+		g.dft(visitor, g.getNodeById("1"));
+		expect(acc.length).toEqual(5);
+		expect(acc).toEqual([1, 2, 4, 3, 5]);
+		// clear the acc
+		acc.length = 0;
+		g.bft(visitor, g.getNodeById("1"));
+		expect(acc.length).toEqual(5);
+		expect(acc).toEqual([1, 2, 4, 3, 5]);
+	});
+
+	it("should get components", function () {
+		let g = Graph.fromArrows(`
+		1->2
+		3
+		4->5
+		`);
+		let cs = g.getComponents();
+		expect(cs.length).toEqual(3);
+		g = Graph.fromArrows(`
+		1->2->3->4
+		2->5->3
+		`);
+		cs = g.getComponents();
+		expect(cs.length).toEqual(1);
+	});
+	it("should fetch the karate club", function () {
+		const g = NamedGraph.karateClub();
+		expect(g.edges.length).toEqual(78);
+		expect(g.nodes.length).toEqual(34);
 	});
 });

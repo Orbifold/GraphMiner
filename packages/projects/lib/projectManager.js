@@ -1,14 +1,16 @@
-const { EntitySpace } = require("@graphminer/entities");
 const { Utils, Strings } = require("@graphminer/utils");
 const { LocalStorage } = require("@graphminer/store");
 const Project = require("./project");
 const ProjectUtils = require("./projectUtils");
-const ProjectsCollectionName = "Projects";
 
-class LocalProjectManager {
+class ProjectManager {
 	static async inMemory() {
 		const storage = await LocalStorage.inMemory();
-		return new LocalProjectManager(storage);
+		return new ProjectManager(storage);
+	}
+
+	get ProjectsCollectionName() {
+		return "projects";
 	}
 
 	constructor(storage) {
@@ -16,7 +18,7 @@ class LocalProjectManager {
 	}
 
 	async getProjects() {
-		const found = await this.storage.find({}, ProjectsCollectionName);
+		const found = await this.storage.find({}, this.ProjectsCollectionName);
 		if (Utils.isEmpty(found)) {
 			return [];
 		}
@@ -31,7 +33,7 @@ class LocalProjectManager {
 		if (await this.projectIdExists(project.id)) {
 			throw new Error(`A project with id '${project.id}' already exists.`);
 		}
-		await this.storage.insert(project.toJSON(), ProjectsCollectionName);
+		await this.storage.insert(project.toJSON(), this.ProjectsCollectionName);
 		return project;
 	}
 
@@ -39,7 +41,7 @@ class LocalProjectManager {
 		if (Utils.isEmpty(id)) {
 			throw new Error(Strings.IsNil("id", "DataManager.getProjectById"));
 		}
-		const found = await this.storage.findOne({ id }, ProjectsCollectionName);
+		const found = await this.storage.findOne({ id }, this.ProjectsCollectionName);
 		if (found) {
 			return Project.fromJSON(found);
 		}
@@ -50,7 +52,7 @@ class LocalProjectManager {
 		if (Utils.isEmpty(id)) {
 			throw new Error(Strings.IsNil("id", "DataManager.removeProject"));
 		}
-		await this.storage.removeWhere({ id }, ProjectsCollectionName);
+		await this.storage.removeWhere({ id }, this.ProjectsCollectionName);
 	}
 
 	async upsertProject(...projectSpecs) {
@@ -58,7 +60,7 @@ class LocalProjectManager {
 		if (Utils.isUndefined(project)) {
 			throw new Error("Don't know how to turn the given argument into a project.");
 		}
-		await this.storage.upsert(project.toJSON(), ProjectsCollectionName, { id: project.id });
+		await this.storage.upsert(project.toJSON(), this.ProjectsCollectionName, { id: project.id });
 		return project;
 	}
 
@@ -66,7 +68,7 @@ class LocalProjectManager {
 		if (Utils.isEmpty(id)) {
 			throw new Error(Strings.IsNil("id", "DataManager.projectIdExists"));
 		}
-		const found = await this.storage.findOne({ id }, ProjectsCollectionName);
+		const found = await this.storage.findOne({ id }, this.ProjectsCollectionName);
 		return Utils.isDefined(found);
 	}
 
@@ -74,9 +76,9 @@ class LocalProjectManager {
 		if (Utils.isEmpty(projectName)) {
 			throw new Error(Strings.IsNil("projectName", "DataManager.projectNameExists"));
 		}
-		const found = await this.storage.findOne({ name: projectName }, ProjectsCollectionName);
+		const found = await this.storage.findOne({ name: projectName }, this.ProjectsCollectionName);
 		return Utils.isDefined(found);
 	}
 }
 
-module.exports = LocalProjectManager;
+module.exports = ProjectManager;

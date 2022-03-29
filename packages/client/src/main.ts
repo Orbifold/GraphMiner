@@ -8,6 +8,7 @@ import LocalDataService from "@/services/LocalDataService";
 import AmbientService from "@/services/AmbientService";
 
 import VueMousetrapPlugin from "vue-mousetrap/vue2";
+import DataService from "@/services/dataService";
 
 Vue.config.productionTip = false;
 
@@ -17,6 +18,9 @@ Vue.config.productionTip = false;
 // Logger.log(`Backend: ${process.env.VUE_APP_SERVER}`);
 
 const localDataService = new LocalDataService();
+const ds = new DataService();
+
+Vue.prototype.$dataService = ds;
 Vue.prototype.$ambientService = new AmbientService(store, router);
 Vue.prototype.$localDataService = localDataService;
 Vue.prototype.$eventHub = new Vue();

@@ -23,6 +23,7 @@
     "@graphminer/entities": "^0.4.2",
     "@graphminer/utils": "^0.4.2",
     "@graphminer/store": "^0.4.2",
+    "@graphminer/projects": "^0.4.2",
     "axios": "^0.21.4",
     "core-js": "^3.6.5",
     "gojs": "^2.2.5",

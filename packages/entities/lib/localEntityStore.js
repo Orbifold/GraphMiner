@@ -5,6 +5,7 @@ const _ = require("lodash");
 const EntityType = require("./entityType");
 const { LocalStorage } = require("@graphminer/store");
 const EntityStore = require("./entityStore");
+const EntitySpacePrefix = "spaces";
 
 /**
  * Manages the entities via the {@link LocalStorage}.
@@ -43,21 +44,21 @@ class LocalEntityStore extends EntityStore {
 	 * The name of the collection storing the metadata for the current database.
 	 */
 	get MetadataCollectionName() {
-		return `es.${this.database}.metadata`;
+		return `${EntitySpacePrefix}.${this.database}.metadata`;
 	}
 
 	/**
 	 * The name of the collection storing the entities for the current database.
 	 */
 	get EntityCollectionName() {
-		return `es.${this.database}.entities`;
+		return `${EntitySpacePrefix}.${this.database}.entities`;
 	}
 
 	/**
 	 * The name of the collection storing the entity types for the current database.
 	 */
 	get EntityTypeCollectionName() {
-		return `es.${this.database}.types`;
+		return `${EntitySpacePrefix}.${this.database}.types`;
 	}
 
 	/**

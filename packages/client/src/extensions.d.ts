@@ -2,6 +2,7 @@ import Vue, { VueConstructor } from "vue";
 
 import AmbientService from "@/services/AmbientService";
 import LocalDataService from "@/services/LocalDataService";
+import DataService from "@/services/dataService";
 
 declare module "vue/types/vue" {
 	interface Vue {
@@ -10,6 +11,7 @@ declare module "vue/types/vue" {
 		 */
 		$ambientService: AmbientService;
 		$localDataService: LocalDataService;
+		$dataService: DataService;
 		$eventHub: Vue;
 		$appInsights: any;
 		$mousetrap: any;
