@@ -1,6 +1,6 @@
 const ProjectUtils = require("../lib/projectUtils");
 const Project = require("../lib/project");
-const LocalProjectManager = require("../lib/projectManager");
+const LocalProjectManager = require("../lib/localProjectManager");
 const { Utils } = require("@graphminer/utils");
 
 describe("ProjectManager", () => {

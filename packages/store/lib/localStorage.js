@@ -88,6 +88,21 @@ class LocalStorage extends Store {
 	}
 
 	/**
+	 * Creates storage in the browser (the Local Storage).
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+	 * @param [name="graphminer"] {string} The name of the local storage
+	 * @returns {Promise<LocalStorage>}
+	 */
+	static async browser(name = "graphminer") {
+		const storage = new LocalStorage();
+		await storage.init(null, {
+			env: "BROWSER",
+			filePath: name ?? "graphminer",
+		});
+		return storage;
+	}
+
+	/**
 	 * Returns a default storage instance saving the data to disk in the user's directory under '.graphminer'.
 	 * @returns {Promise<LocalStorage>}
 	 * @async

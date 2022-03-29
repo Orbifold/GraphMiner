@@ -52,7 +52,7 @@
 						<v-btn color="primary" depressed @click="addBook">Add One</v-btn>
 						<v-data-table :headers="headers" :items="data" :items-per-page="5" class="elevation-0"></v-data-table>
 					</pane>
-					<pane :size="showBottom ? sizeBottom : 0" max-size="30" min-size="0">Bottom up {{ u }}</pane>
+					<pane :size="showBottom ? sizeBottom : 0" max-size="30" min-size="0">Bottom</pane>
 				</splitpanes>
 			</pane>
 			<pane :size="showRight ? sizeRight : 0" max-size="30" min-size="0">
@@ -108,7 +108,7 @@
 			},
 		];
 		data: any[] = [];
-		u: string = null;
+
 
 		get middleSize() {
 			return 100 - (this.showRight ? this.sizeRight : 0) - (this.showLeft ? this.sizeLeft : 0);
@@ -127,7 +127,7 @@
 				await this.space.addEntityType("Book");
 			}
 			await this.refresh();
-			this.u = Utils.id();
+
 		}
 
 		async refresh() {

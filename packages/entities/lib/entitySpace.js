@@ -9,7 +9,10 @@ const assert = require("assert");
 
 /**
  * Gateway to entities.
- * Strictly speaking an object-graph-mapper (OGM).
+ *
+ *
+ * - Strictly speaking an object-graph-mapper (OGM).
+ * - The spaces is partitioned in databases. This would correspond in e.g. Neo4j with separate database connections. There is always a default database in use if none specified.
  * @example
  * // default saves things to ~/.graphminer/localStorage.json
  * const em = await EntitySpace.default();
@@ -20,6 +23,32 @@ const assert = require("assert");
  */
 class EntitySpace {
 	#store;
+
+	get database() {
+		return this.#store.database;
+	}
+
+	/**
+	 * Changes the active database.
+	 * When using the local or browser store this is a simple name change. When using Neo4j or TigerGraph this leads to an async change of connection.
+	 * @param v
+	 * @returns {Promise<void>}
+	 */
+	async setDatabase(v) {
+		if (Utils.isEmpty(v)) {
+			this.#store.database = "default";
+		} else {
+			if (!Utils.isSimpleString(v)) {
+				throw new Error("The name of a database should be a simple string (alphanumeric not starting with a number)");
+			}
+			v = v.trim();
+			// in case it's 'Default' we'll be kind
+			if (v.toLowerCase() === "default") {
+				v = "default";
+			}
+			this.#store.database = v;
+		}
+	}
 
 	/**
 	 * When the schema is enforced the instances are checked against their entity type.

@@ -1,8 +1,8 @@
-const { Utils, Strings } = require("@graphminer/utils");
-const { EntitySpace } = require("@graphminer/entities");
+const {Utils, Strings} = require("@graphminer/utils");
+const {EntitySpace, LocalEntityStore} = require("@graphminer/entities");
 const ProjectUtils = require("./projectUtils");
 const Project = require("./project");
-const LocalProjectManager = require("./projectManager");
+const LocalProjectManager = require("./localProjectManager");
 
 /*
  * Manages all data of GraphMiner client by extending the EntitySpace with
@@ -21,10 +21,9 @@ class DataManger {
 	 */
 	entitySpace;
 
-	static async inMemory(projectName = null) {
-		const projectManager = await LocalProjectManager.inMemory();
-		const entitySpace = Utils.isEmpty(projectName) ? null : await EntitySpace.inMemory(projectName);
-		return new DataManger(projectManager, entitySpace);
+
+	static async browser() {
+		const localEntityStore = LocalEntityStore.browser()
 	}
 
 	constructor(projectManager, entitySpace) {

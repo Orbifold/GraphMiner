@@ -1,23 +1,10 @@
 const Entity = require("./entity");
-const {Utils, Strings} = require("@graphminer/Utils");
+const { Utils, Strings } = require("@graphminer/Utils");
 
 const _ = require("lodash");
 const EntityType = require("./entityType");
-const {LocalStorage} = require("@graphminer/store");
+const { LocalStorage } = require("@graphminer/store");
 const EntityStore = require("./entityStore");
-
-/**
- * The name of the collection storing the entity types.
- */
-const EntityTypeCollectionName = "EntityTypes";
-/**
- * The name of the collection storing the entities.
- */
-const EntityCollectionName = "Entities";
-/**
- * The name of the collection storing the metadata.
- */
-const MetadataCollectionName = "Metadata";
 
 /**
  * Manages the entities via the {@link LocalStorage}.
@@ -31,9 +18,46 @@ class LocalEntityStore extends EntityStore {
 	 * Ensures that the initialization doesn't happen multiple times.
 	 */
 	#initialized = false;
+	#database = "default";
 
 	constructor() {
 		super();
+	}
+
+	get database() {
+		return this.#database;
+	}
+
+	set database(v) {
+		if (Utils.isEmpty(v)) {
+			this.#database = "default";
+		} else {
+			if (!Utils.isSimpleString(v)) {
+				throw new Error("The name of a database should be a simple string (alphanumeric not starting with a number)");
+			}
+			this.#database = v;
+		}
+	}
+
+	/**
+	 * The name of the collection storing the metadata for the current database.
+	 */
+	get MetadataCollectionName() {
+		return `es.${this.database}.metadata`;
+	}
+
+	/**
+	 * The name of the collection storing the entities for the current database.
+	 */
+	get EntityCollectionName() {
+		return `es.${this.database}.entities`;
+	}
+
+	/**
+	 * The name of the collection storing the entity types for the current database.
+	 */
+	get EntityTypeCollectionName() {
+		return `es.${this.database}.types`;
 	}
 
 	/**
@@ -54,6 +78,21 @@ class LocalEntityStore extends EntityStore {
 		const entityStore = new LocalEntityStore();
 		entityStore.storage = await LocalStorage.default();
 		return entityStore;
+	}
+
+	/**
+	 * Creates a space in the browser (the Local Storage).
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+	 * @param [name="graphminer"] {string} The name of the local storage
+	 * @returns {Promise<LocalEntityStore>}
+	 */
+	static async browser(name = "graphminer") {
+		const store = new LocalEntityStore();
+		await store.init(null, {
+			env: "BROWSER",
+			filePath: name ?? "graphminer",
+		});
+		return store;
 	}
 
 	/**
@@ -80,10 +119,10 @@ class LocalEntityStore extends EntityStore {
 	 */
 	async clear(entityTypes = true, entities = true) {
 		if (entities) {
-			await this.storage.removeWhere({}, EntityCollectionName);
+			await this.storage.removeWhere({}, this.EntityCollectionName);
 		}
 		if (entityTypes) {
-			await this.storage.removeWhere({}, EntityTypeCollectionName);
+			await this.storage.removeWhere({}, this.EntityTypeCollectionName);
 		}
 	}
 
@@ -99,7 +138,7 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(id)) {
 			throw new Error(Strings.ShoudBeType("id", "string", "LocalEntityStore.getEntityTypeById"));
 		}
-		return await this.storage.findOne({id}, EntityTypeCollectionName);
+		return await this.storage.findOne({ id }, this.EntityTypeCollectionName);
 	}
 
 	/**
@@ -107,7 +146,7 @@ class LocalEntityStore extends EntityStore {
 	 * @returns {Promise<void>}
 	 */
 	async getMetadata(name = null) {
-		let metadata = await this.storage.findOne({__id: "Metadata"}, MetadataCollectionName);
+		let metadata = await this.storage.findOne({ __id: "Metadata" }, this.MetadataCollectionName);
 		if (Utils.isEmpty(metadata)) {
 			metadata = {};
 		} else {
@@ -125,12 +164,12 @@ class LocalEntityStore extends EntityStore {
 		const metadata = (await this.getMetadata()) || {};
 		metadata[name] = value;
 		metadata["__id"] = "Metadata";
-		return await this.storage.upsert(metadata, MetadataCollectionName, {__id: "Metadata"});
+		return await this.storage.upsert(metadata, this.MetadataCollectionName, { __id: "Metadata" });
 	}
 
 	async assignMetadata(metadata) {
 		metadata["__id"] = "Metadata";
-		return await this.storage.upsert(metadata, MetadataCollectionName, {__id: "Metadata"});
+		return await this.storage.upsert(metadata, this.MetadataCollectionName, { __id: "Metadata" });
 	}
 
 	/**
@@ -148,7 +187,7 @@ class LocalEntityStore extends EntityStore {
 		} else if (obj instanceof EntityType) {
 			json = JSON.parse(JSON.stringify(obj));
 		}
-		await this.storage.upsert(json, EntityTypeCollectionName, {name: obj.name});
+		await this.storage.upsert(json, this.EntityTypeCollectionName, { name: obj.name });
 	}
 
 	/**
@@ -156,7 +195,7 @@ class LocalEntityStore extends EntityStore {
 	 * @returns {Promise<*>}
 	 */
 	async getEntityTypes() {
-		return await this.storage.find({}, EntityTypeCollectionName);
+		return await this.storage.find({}, this.EntityTypeCollectionName);
 	}
 
 	/**
@@ -172,9 +211,9 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(entityTypeName)) {
 			throw new Error(Strings.ShoudBeType("entityTypeName", "string", "LocalEntityStore.removeEntityType"));
 		}
-		await this.storage.removeWhere({name: entityTypeName}, EntityTypeCollectionName);
+		await this.storage.removeWhere({ name: entityTypeName }, this.EntityTypeCollectionName);
 		if (removeInstances) {
-			await this.storage.removeWhere({typeName: entityTypeName}, EntityCollectionName);
+			await this.storage.removeWhere({ typeName: entityTypeName }, this.EntityCollectionName);
 		}
 	}
 
@@ -182,15 +221,15 @@ class LocalEntityStore extends EntityStore {
 		if (Utils.isEmpty(id)) {
 			return;
 		}
-		this.storage.removeWhere({id}, EntityCollectionName);
+		this.storage.removeWhere({ id }, this.EntityCollectionName);
 	}
 
 	async removeInstances(entityTypeName) {
-		this.storage.removeWhere({typeName: entityTypeName}, EntityCollectionName);
+		this.storage.removeWhere({ typeName: entityTypeName }, this.EntityCollectionName);
 	}
 
 	async getValueProperties(entityTypeName) {
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, this.EntityTypeCollectionName);
 		if (Utils.isEmpty(found)) {
 			return [];
 		}
@@ -198,7 +237,7 @@ class LocalEntityStore extends EntityStore {
 	}
 
 	async getObjectProperties(entityTypeName) {
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, this.EntityTypeCollectionName);
 		if (Utils.isEmpty(found)) {
 			return [];
 		}
@@ -236,7 +275,7 @@ class LocalEntityStore extends EntityStore {
 				break;
 		}
 		this.validateInstance(json);
-		await this.storage.upsert(json, EntityCollectionName, {id: json.id});
+		await this.storage.upsert(json, this.EntityCollectionName, { id: json.id });
 	}
 
 	validateInstance(instance) {
@@ -255,14 +294,14 @@ class LocalEntityStore extends EntityStore {
 		if (!_.isString(id)) {
 			throw new Error(Strings.ShoudBeType("id", "string", "LocalEntityStore.getInstanceById"));
 		}
-		return await this.storage.findOne({id}, EntityCollectionName);
+		return await this.storage.findOne({ id }, this.EntityCollectionName);
 	}
 
 	async getInstances(typeName = null) {
 		if (Utils.isEmpty(typeName)) {
-			return await this.storage.find({}, EntityCollectionName);
+			return await this.storage.find({}, this.EntityCollectionName);
 		}
-		return await this.storage.find({typeName}, EntityCollectionName);
+		return await this.storage.find({ typeName }, this.EntityCollectionName);
 	}
 
 	/**
@@ -284,7 +323,7 @@ class LocalEntityStore extends EntityStore {
 		} else if (_.isString(entityTypeSpec)) {
 			entityTypeName = entityTypeSpec.toString().trim();
 		}
-		const found = await this.storage.findOne({name: entityTypeName}, EntityTypeCollectionName);
+		const found = await this.storage.findOne({ name: entityTypeName }, this.EntityTypeCollectionName);
 		return found || null;
 	}
 
@@ -297,18 +336,18 @@ class LocalEntityStore extends EntityStore {
 	}
 
 	async countEntityTypes() {
-		return await this.storage.count({}, EntityTypeCollectionName);
+		return await this.storage.count({}, this.EntityTypeCollectionName);
 	}
 
 	async countEntities() {
-		return await this.storage.count({}, EntityCollectionName);
+		return await this.storage.count({}, this.EntityCollectionName);
 	}
 
 	async countInstances(entityTypeName = null) {
 		if (Utils.isEmpty(entityTypeName)) {
-			return await this.storage.count({}, EntityCollectionName);
+			return await this.storage.count({}, this.EntityCollectionName);
 		} else {
-			return await this.storage.count({typeName: entityTypeName}, EntityCollectionName);
+			return await this.storage.count({ typeName: entityTypeName }, this.EntityCollectionName);
 		}
 	}
 
@@ -326,13 +365,13 @@ class LocalEntityStore extends EntityStore {
 		if (amount < 1) {
 			throw new Error("The amount should be an integer larger than zero.");
 		}
-		const max = await this.storage.count({}, EntityCollectionName);
+		const max = await this.storage.count({}, this.EntityCollectionName);
 		if (amount >= max) {
-			return await this.storage.find({}, EntityCollectionName);
+			return await this.storage.find({}, this.EntityCollectionName);
 		}
 		const coll = [];
 		for (let i = 0; i < amount; i++) {
-			coll.push(await this.storage.random(EntityCollectionName));
+			coll.push(await this.storage.random(this.EntityCollectionName));
 		}
 		return coll;
 	}
@@ -342,7 +381,7 @@ class LocalEntityStore extends EntityStore {
 			delete obj[fieldName];
 			return obj;
 		};
-		await this.storage.findAndUpdateCollection(EntityCollectionName, updater, {typeName: entityTypeName});
+		await this.storage.findAndUpdateCollection(this.EntityCollectionName, updater, { typeName: entityTypeName });
 	}
 
 	async removeLinkFromInstances(entityTypeName, objectPropertyName) {
@@ -358,7 +397,7 @@ class LocalEntityStore extends EntityStore {
 			}
 			return obj;
 		};
-		await this.storage.findAndUpdateCollection(EntityCollectionName, updater, {typeName: entityTypeName});
+		await this.storage.findAndUpdateCollection(this.EntityCollectionName, updater, { typeName: entityTypeName });
 	}
 
 	async save() {

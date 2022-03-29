@@ -121,4 +121,25 @@ describe("Utils", function () {
 		expect(Utils.histogram(a, 5)).toEqual([2, 1, 1, 1, 1]);
 		expect(Utils.histogram(a, 2)).toEqual([5, 1]);
 	});
+	it("should test for simple strings", function () {
+		expect(Utils.isSimpleString("adfadf")).toBeTruthy();
+		expect(Utils.isSimpleString("A")).toBeTruthy();
+		expect(Utils.isSimpleString("g")).toBeTruthy();
+		expect(Utils.isSimpleString("Aad423fadf")).toBeTruthy();
+		expect(Utils.isSimpleString(null)).not.toBeTruthy();
+		expect(Utils.isSimpleString(2342)).not.toBeTruthy();
+		expect(Utils.isSimpleString(() => {})).not.toBeTruthy();
+		expect(Utils.isSimpleString("")).not.toBeTruthy();
+		expect(Utils.isSimpleString("s$df")).not.toBeTruthy();
+		expect(Utils.isSimpleString("s_df")).not.toBeTruthy();
+		expect(Utils.isSimpleString("1asdfAdf")).not.toBeTruthy();
+		expect(Utils.isSimpleString("s-df")).not.toBeTruthy();
+		expect(Utils.isSimpleString("s df")).not.toBeTruthy();
+		expect(
+			Utils.isSimpleString(`
+		asfasd
+		s
+		`),
+		).not.toBeTruthy();
+	});
 });

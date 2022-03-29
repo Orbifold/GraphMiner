@@ -629,5 +629,20 @@ const Utils = {
 
 		return histogram;
 	},
+	/**
+	 * Checks that the given string can act as a simple (variable) name.
+	 * Only alphanumeric and should not start with a number.
+	 * @param s {string} Any string.
+	 * @returns {boolean}
+	 */
+	isSimpleString(s) {
+		if (Utils.isEmpty(s)) {
+			return false;
+		}
+		if (!_.isString(s)) {
+			return false;
+		}
+		return /^[a-zA-Z]([a-zA-Z0-9])*$/gi.test(s);
+	},
 };
 module.exports = Utils;
