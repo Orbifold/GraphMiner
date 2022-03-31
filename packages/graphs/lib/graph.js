@@ -788,12 +788,12 @@ class Graph {
 	 * Adds a node to the graph.
 	 * @param nodeSpec {any} A INodeBase instance or some data which can be converted to it.
 	 */
-	addNode(nodeSpec) {
-		const node = GraphUtils.getNodeFromSpecs(nodeSpec);
+	addNode(...nodeSpec) {
+		const node = GraphUtils.getNodeFromSpecs(...nodeSpec);
 		if (!this.nodeIdExists(node.id)) {
 			this.#nodes.push(node);
 		}
-		return nodeSpec;
+		return node;
 	}
 
 	/**

@@ -30,28 +30,6 @@ class EntitySpace {
 	}
 
 	/**
-	 * Changes the active database.
-	 * When using the local or browser store this is a simple name change. When using Neo4j or TigerGraph this leads to an async change of connection.
-	 * @param v
-	 * @returns {Promise<void>}
-	 */
-	async setDatabase(v) {
-		if (Utils.isEmpty(v)) {
-			this.#store.database = "default";
-		} else {
-			if (!Utils.isSimpleString(v)) {
-				throw new Error("The name of a database should be a simple string (alphanumeric not starting with a number)");
-			}
-			v = v.trim();
-			// in case it's 'Default' we'll be kind
-			if (v.toLowerCase() === "default") {
-				v = "default";
-			}
-			this.#store.database = v;
-		}
-	}
-
-	/**
 	 * When the schema is enforced the instances are checked against their entity type.
 	 * @returns {boolean}
 	 */
@@ -71,6 +49,8 @@ class EntitySpace {
 			throw new Error(Strings.ShoudBeType("enforceSchema", "boolean", "EntitySpace.enforceSchema"));
 		}
 		this.settings.enforceSchema = v;
+		// will be async but the local settings value will be used immediately
+		this.#store.setMetadata("enforceSchema", v);
 	}
 
 	/**
@@ -138,6 +118,46 @@ class EntitySpace {
 		entity.typeName = typeName;
 		entity.id = instanceSpec.id || Utils.id();
 		return entity;
+	}
+
+	/**
+	 * Changes the active database.
+	 * When using the local or browser store this is a simple name change. When using Neo4j or TigerGraph this leads to an async change of connection.
+	 * @param v
+	 * @returns {Promise<void>}
+	 */
+	async setDatabase(v) {
+		if (Utils.isEmpty(v)) {
+			this.#store.database = "default";
+		} else {
+			if (!Utils.isSimpleString(v)) {
+				throw new Error("The name of a database should be a simple string (alphanumeric not starting with a number)");
+			}
+			const exists = await this.databaseExists(v);
+			if (!exists) {
+				throw new Error(`The database '${v}' does not exists.`);
+			}
+			v = v.trim();
+			// in case it's 'Default' we'll be kind
+			if (v.toLowerCase() === "default") {
+				v = "default";
+			}
+			this.#store.database = v;
+			// fetch the setting
+			this.settings.enforceSchema = await this.#store.getMetadata("enforceSchema");
+		}
+	}
+
+	async databaseExists(dbName) {
+		return this.#store.databaseExists(dbName);
+	}
+
+	async createDatabase(dbName) {
+		return this.#store.createDatabase(dbName);
+	}
+
+	async removeDatabase(dbName) {
+		return this.#store.removeDatabase(dbName);
 	}
 
 	/**
@@ -240,6 +260,7 @@ class EntitySpace {
 				if (_.isString(args[0])) {
 					const entityStore = new LocalEntityStore();
 					await entityStore.init(null, args[0]);
+					await entityStore.ensureDefaultDatabaseExists();
 					this.#store = entityStore;
 				} else {
 					const context = args[0];
@@ -255,6 +276,7 @@ class EntitySpace {
 				const context = args[0];
 				settings = args[1];
 				await entityStore.init(context, settings);
+				await entityStore.ensureDefaultDatabaseExists();
 				this.#store = entityStore;
 		}
 
@@ -262,6 +284,7 @@ class EntitySpace {
 			enforceSchema: true,
 		};
 		this.settings = _.assign(defaults, settings);
+
 		await this.#ensureHasId();
 	}
 
@@ -894,18 +917,21 @@ class EntitySpace {
 		if (Utils.isEmpty(found)) {
 			return null;
 		}
-		const typeName = found.typeName;
+		return await this.#getInstanceFromJson(found);
+	}
+
+	async #getInstanceFromJson(json) {
+		const typeName = json.typeName;
 		if (this.enforceSchema) {
 			const entityType = await this.getEntityType(typeName);
 			// happens if the type has been removed but not the instance
 			if (Utils.isEmpty(entityType)) {
-				return await Entity.untyped(typeName, found);
+				return Entity.untyped(typeName, json);
 			} else {
-				return Entity.fromJSON(entityType, found);
+				return Entity.fromJSON(entityType, json);
 			}
 		} else {
-			const entity = new Entity(null, null);
-			_.assign(entity, found);
+			const entity = Entity.fromJSON(typeName, json);
 			entity.typeName = typeName;
 			entity.space = this;
 			return entity;
@@ -914,22 +940,30 @@ class EntitySpace {
 
 	/**
 	 * Returns all instances.
-	 * @param typeName {string}
+	 * @param typeName {string|null}
 	 * @returns {Promise<*[]|*>}
 	 */
 	async getInstances(typeName = null) {
 		// todo: limit with count
-		const entityType = await this.getEntityType(typeName);
-
-		if (Utils.isEmpty(entityType)) {
-			return [];
+		if (Utils.isDefined(typeName)) {
+			const entityType = await this.getEntityType(typeName);
+			if (Utils.isEmpty(entityType)) {
+				return [];
+			}
+			const found = await this.store.getInstances(typeName);
+			const coll = [];
+			for (const ins of found) {
+				coll.push(await Entity.fromJSON(entityType, ins));
+			}
+			return coll;
+		} else {
+			const found = await this.store.getInstances(typeName);
+			const coll = [];
+			for (const ins of found) {
+				coll.push(await this.#getInstanceFromJson(ins));
+			}
+			return coll;
 		}
-		const found = await this.store.getInstances(typeName);
-		const coll = [];
-		for (const ins of found) {
-			coll.push(await Entity.fromJSON(entityType, ins));
-		}
-		return coll;
 	}
 
 	/**
@@ -1112,13 +1146,16 @@ class EntitySpace {
 			g.nodes.push({
 				id: n.id,
 				name: n.name,
+				typeName: n.typeName || "Unknown",
 			});
-			for (const linkName in n.objects) {
-				if (_.isString(n.objects[linkName])) {
+			const names = _.keys(n.objects);
+			for (const linkName of names) {
+				const links = n.objects[linkName];
+				for (const id of links) {
 					g.edges.push({
-						source: n.id,
+						sourceId: n.id,
 						name: linkName,
-						target: n.objects[linkName],
+						targetId: id,
 					});
 				}
 			}
@@ -1146,7 +1183,7 @@ class EntitySpace {
 			}
 		}
 		for (const node of graph.nodes) {
-			await this.upsertInstance(node.typeName, node);
+			await this.upsertInstance(node.typeName || "Unknown", node);
 		}
 
 		for (const edge of graph.edges) {

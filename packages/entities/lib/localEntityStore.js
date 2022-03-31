@@ -40,6 +40,34 @@ class LocalEntityStore extends EntityStore {
 		}
 	}
 
+	async createDatabase(dbName) {
+		const exists = await this.databaseExists(dbName);
+		if (exists) {
+			throw new Error(`The database '${dbName}' already exists.`);
+		}
+		await this.storage.createCollection(`${EntitySpacePrefix}.${dbName}.metadata`);
+		await this.storage.insert({ enforceSchema: true }, `${EntitySpacePrefix}.${dbName}.metadata`);
+		await this.storage.createCollection(`${EntitySpacePrefix}.${dbName}.entities`);
+		await this.storage.createCollection(`${EntitySpacePrefix}.${dbName}.types`);
+	}
+
+	async removeDatabase(dbName) {
+		const exists = await this.databaseExists(dbName);
+		if (!exists) {
+			throw new Error(`The database '${dbName}' does not exists.`);
+		}
+		await this.storage.removeCollection(`${EntitySpacePrefix}.${dbName}.metadata`);
+		await this.storage.removeCollection(`${EntitySpacePrefix}.${dbName}.entities`);
+		await this.storage.removeCollection(`${EntitySpacePrefix}.${dbName}.types`);
+	}
+
+	async databaseExists(dbName) {
+		if (Utils.isEmpty(dbName)) {
+			return false;
+		}
+		return this.storage.collectionExists(`${EntitySpacePrefix}.${dbName}.metadata`);
+	}
+
 	/**
 	 * The name of the collection storing the metadata for the current database.
 	 */
@@ -68,6 +96,7 @@ class LocalEntityStore extends EntityStore {
 	static async inMemory() {
 		const entityStore = new LocalEntityStore();
 		entityStore.storage = await LocalStorage.inMemory();
+		await entityStore.ensureDefaultDatabaseExists();
 		return entityStore;
 	}
 
@@ -78,7 +107,15 @@ class LocalEntityStore extends EntityStore {
 	static async default() {
 		const entityStore = new LocalEntityStore();
 		entityStore.storage = await LocalStorage.default();
+		await entityStore.ensureDefaultDatabaseExists();
 		return entityStore;
+	}
+
+	async ensureDefaultDatabaseExists() {
+		const exists = await this.databaseExists("default");
+		if (!exists) {
+			await this.createDatabase("default");
+		}
 	}
 
 	/**
@@ -88,12 +125,13 @@ class LocalEntityStore extends EntityStore {
 	 * @returns {Promise<LocalEntityStore>}
 	 */
 	static async browser(name = "graphminer") {
-		const store = new LocalEntityStore();
-		await store.init(null, {
+		const entityStore = new LocalEntityStore();
+		await entityStore.init(null, {
 			env: "BROWSER",
 			filePath: name ?? "graphminer",
 		});
-		return store;
+		await entityStore.ensureDefaultDatabaseExists();
+		return entityStore;
 	}
 
 	/**
@@ -303,10 +341,13 @@ class LocalEntityStore extends EntityStore {
 	}
 
 	async getInstances(typeName = null) {
+		let coll;
 		if (Utils.isEmpty(typeName)) {
-			return await this.storage.find({}, this.EntityCollectionName);
+			coll = await this.storage.find({}, this.EntityCollectionName);
+		} else {
+			coll = await this.storage.find({ typeName }, this.EntityCollectionName);
 		}
-		return await this.storage.find({ typeName }, this.EntityCollectionName);
+		return coll;
 	}
 
 	/**

@@ -169,7 +169,7 @@ class NamedGraph {
 
 	static createGraphFrom(nodes, edges) {
 		const g = Graph.empty();
-		nodes.forEach((i) => g.addNode(i));
+		nodes.forEach((i) => g.addNode(i.toString(), i.toString()));
 		edges.forEach((e) => g.addEdge(e));
 		return g;
 	}

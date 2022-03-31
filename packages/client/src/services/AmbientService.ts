@@ -2,13 +2,7 @@ import { Store } from "vuex";
 import Logger from "@/services/LoggerService";
 import * as _ from "lodash";
 import { VueRouter } from "vue-router/types/router";
-
-export enum NotificationType {
-	Error = "Error",
-	Message = "Message",
-	Warning = "Warning",
-	Clear = "Clear",
-}
+import { NotificationType } from "@/shared/notificationType";
 
 /*
  * Mostly services delivered by the App.vue frame.
@@ -157,8 +151,23 @@ export default class AmbientService {
 	 * @param route {any} Can be a router spec or just a name.
 	 */
 	navigateTo(route: any) {
-		// pushing the same name results in a Vue error
-		this.$router.push(route).catch(() => {});
+		if (route.toString().toLowerCase() === "backend") {
+			return window.open(process.env.VUE_APP_SERVER, "_blank");
+		}
+		this.$router.push(this.resolveRoute(route));
+	}
+
+	resolveRoute(route: any) {
+		if (_.isString(route)) {
+			if (route.startsWith("/")) {
+				return { path: route };
+			}
+			return { name: route };
+		} else if (_.isPlainObject(route)) {
+			return route;
+		} else {
+			throw new Error(`Not sure how to handle the specified route.`);
+		}
 	}
 
 	showHelp(name) {

@@ -1,5 +1,6 @@
 const { Utils, Strings } = require("@graphminer/utils");
 const Graph = require("./graph");
+const _ = require("lodash");
 
 /*
  * Diverse random graph algorithms.
@@ -11,17 +12,17 @@ class RandomGraph {
 	 * @returns {{name: string, id: string}}
 	 */
 	static nodeCreator = (i) => {
-		return { id: i.toString(), name: i.toString() };
+		return { id: i.toString(), name: i.toString(), typeName: "Unknown" };
 	};
 
 	/**
 	 * Defines the way the algorithms create an edge for a given edge.
 	 * @param i {number} Source index.
 	 * @param j {number} Target index.
-	 * @returns {{source: string, target: string}}
+	 * @returns {{sourceId: string, targetId: string}}
 	 */
 	static edgeCreator = (i, j) => {
-		return { source: i.toString(), target: j.toString() };
+		return { sourceId: i.toString(), targetId: j.toString() };
 	};
 
 	static generate(name = "Erdos", ...params) {
@@ -157,7 +158,7 @@ class RandomGraph {
 			tmpEdges = [];
 		let i, j, k;
 		for (i = 0; i < n; i++) {
-			graph.nodes.push({ label: "node " + i });
+			graph.nodes.push(RandomGraph.nodeCreator(i));
 			for (j = i + 1; j < n; j++) {
 				tmpEdges.push(RandomGraph.edgeCreator(i, j));
 			}
@@ -179,7 +180,7 @@ class RandomGraph {
 	 * @param k {number}  mean degree (even integer)
 	 * @param {number} alpha rewiring probability [0..1]
 	 */
-	static WattsStrogatzAlpha(n = 30, k = 3, alpha = 0.4) {
+	static WattsStrogatzAlpha(n = 30, k = 6, alpha = 0.54) {
 		const graph = { nodes: [], edges: [] };
 		let i, j, edge;
 		const p = Math.pow(10, -10);
@@ -190,7 +191,7 @@ class RandomGraph {
 		let Rij, sumRij, r, pij;
 
 		for (i = 0; i < n; i++) {
-			graph.nodes.push({ label: "node " + i });
+			graph.nodes.push(RandomGraph.nodeCreator(i));
 			// create a lattice ring structure
 			edge = RandomGraph.edgeCreator(i, (i + 1) % n);
 			edge_lut[edge.source + "-" + edge.target] = edge;
@@ -256,18 +257,17 @@ class RandomGraph {
 	 * @param K {number}  mean degree (even integer)
 	 * @param {number} beta rewiring probability [0..1]
 	 */
-	static WattsStrogatzBeta(n = 30, K = 3, beta = 0.4) {
+	static WattsStrogatzBeta(n = 30, K = 6, beta = 0.54) {
 		const graph = { nodes: [], edges: [] };
 		let i, j, t, edge;
 		const edge_lut = {};
 		K = K >> 1; // divide by two
 		for (i = 0; i < n; i++) {
-			graph.nodes.push({ label: "node " + i });
+			graph.nodes.push(RandomGraph.nodeCreator(i));
 			// create a lattice ring structure
 			for (j = 1; j <= K; j++) {
 				edge = RandomGraph.edgeCreator(i, (i + j) % n);
-				edge_lut[edge.source + "-" + edge.target] = edge;
-				graph.edges.push(edge);
+				edge_lut[edge.sourceId + "-" + edge.targetId] = edge;
 			}
 		}
 		// rewiring of edges
@@ -279,12 +279,13 @@ class RandomGraph {
 						t = Math.floor(Math.random() * (n - 1));
 					} while (t === i || edge_lut[i + "-" + t]);
 					const j_ = (i + j) % n;
-					edge_lut[i + "-" + j_].target = t; // rewire
+					edge_lut[i + "-" + j_].targetId = t.toString(); // rewire
 					edge_lut[i + "-" + t] = edge_lut[i + "-" + j_];
 					delete edge_lut[i + "-" + j_];
 				}
 			}
 		}
+		graph.edges.push(..._.values(edge_lut));
 		return graph;
 	}
 
@@ -303,7 +304,7 @@ class RandomGraph {
 		let i, j, edge, sum, s, m, r, p;
 		// creating m0 nodes
 		for (i = 0; i < m0; i++) {
-			graph.nodes.push({ label: "node " + i });
+			graph.nodes.push(RandomGraph.nodeCreator(i));
 			degrees[i] = 0;
 		}
 		// Linking every node with each other (no self-loops)
@@ -318,7 +319,7 @@ class RandomGraph {
 		}
 		// Adding N - m0 nodes, each with M edges
 		for (i = m0; i < N; i++) {
-			graph.nodes.push({ label: "node " + i });
+			graph.nodes.push(RandomGraph.nodeCreator(i));
 			degrees[i] = 0;
 			sum = 0; // sum of all nodes degrees
 			for (j = 0; j < i; j++) sum += degrees[j];

@@ -2,6 +2,7 @@
 	<v-app>
 		<ConfirmationDialog ref="confirmationDialog"></ConfirmationDialog>
 		<AboutDialog ref="aboutDialog"></AboutDialog>
+		<NotificationDialog ref="notificationDialog"></NotificationDialog>
 		<v-app-bar app>
 			<v-app-bar-nav-icon @click="leftDrawer = !leftDrawer"></v-app-bar-nav-icon>
 			<v-toolbar-title>
@@ -44,9 +45,11 @@
 	import ConfirmationDialog from "@/dialogs/ConfirmationDialog.vue";
 	import AboutDialog from "@/dialogs/AboutDialog.vue";
 	import MainMenu from "@/components/MainMenu.vue";
+	import NotificationDialog from "@/dialogs/NotificationDialog.vue";
+	import { NotificationType } from "@/shared/notificationType";
 
 	@Component({
-		components: { AboutDialog, MainMenu, ConfirmationDialog },
+		components: { AboutDialog, MainMenu, ConfirmationDialog, NotificationDialog },
 	})
 	export default class App extends Vue {
 		leftDrawer: boolean = null;
@@ -61,7 +64,8 @@
 		mounted() {
 			this.$ambientService.confirm = this.confirm;
 			this.$ambientService.showAbout = this.showAbout;
-			this.$dataService.init().then(() => {
+			this.$ambientService.notify = this.showNotification;
+			this.$dataService.init(this.$store).then(() => {
 				this.isInitialized = true;
 			});
 		}
@@ -72,6 +76,10 @@
 
 		showAbout() {
 			return (this.$refs.aboutDialog as any).show();
+		}
+
+		showNotification(text: string, type: NotificationType) {
+			(this.$refs.notificationDialog as any).notify(text, type);
 		}
 
 		goHome() {

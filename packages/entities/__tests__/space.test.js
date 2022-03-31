@@ -7,7 +7,6 @@ const {LocalStorage} = require("@graphminer/store");
 const EntityStore = require("../lib/entityStore");
 const {NamedGraph} = require("@graphminer/graphs");
 
-
 describe("Entities", function () {
 	it("should create detached instances", async function () {
 		// ===================================================================
@@ -640,6 +639,15 @@ describe("Entities", function () {
 		const space = await EntitySpace.inMemory();
 		// in the default database
 		await space.addEntityType("Book");
+		// can't use it if not there
+		let hasThrown = false;
+		try {
+			await space.setDatabase("A");
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
+		await space.createDatabase("A");
 		await space.setDatabase("A");
 		await space.addEntityType("Car");
 		// the Book type sits in the default db
@@ -647,8 +655,12 @@ describe("Entities", function () {
 		expect(found).toBeNull();
 		// while the Car type sits in A
 		await space.setDatabase("default");
-		found = await space.getEntityType("A");
+		found = await space.getEntityType("something");
 		expect(found).toBeNull();
+		expect(await space.databaseExists("A")).toBeTruthy();
+		// drop it
+		await space.removeDatabase("A");
+		expect(await space.databaseExists("A")).not.toBeTruthy();
 	});
 
 	it("should serialize untyped instances", function () {
@@ -708,5 +720,21 @@ describe("Entities", function () {
 		expect(ins[0].getObjects("link").length).toEqual(1);
 		expect(ins[1].getObjects("link").length).toEqual(1);
 		expect(ins[2].getObjects("link").length).toEqual(0);
+	});
+
+	it("should get all instances", async function () {
+		const space = await EntitySpace.inMemory();
+		const graph = NamedGraph.karateClub();
+		await space.importGraph(graph);
+		const gj = await space.exportGraphJson();
+		expect(gj.edges.length).toEqual(graph.edges.length);
+		expect(gj.nodes.length).toEqual(graph.nodes.length);
+		// when importing a GraphMiner graph the knowledge graph gets 'links' for the connections
+		expect(gj.edges[0].name).toEqual("link");
+		expect(gj.nodes[0].id).toEqual(gj.nodes[0].name);
+
+		const ins = await space.getAllInstances()
+		expect(ins.length).toEqual(graph.nodes.length)
+		expect(ins[0].id).toEqual(graph.nodes[0].id)
 	});
 });

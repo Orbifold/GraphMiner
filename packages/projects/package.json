@@ -30,6 +30,7 @@
   "dependencies": {
     "@graphminer/entities": "^0.4.2",
     "@graphminer/utils": "^0.4.2",
-    "@graphminer/store": "^0.4.2"
+    "@graphminer/store": "^0.4.2",
+    "@graphminer/graphs": "^0.4.2"
   }
 }
