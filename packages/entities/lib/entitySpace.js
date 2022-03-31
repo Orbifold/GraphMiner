@@ -6,6 +6,7 @@ const ValueProperty = require("./valueProperty");
 const ObjectProperty = require("./objectProperty");
 const SpaceUtils = require("./utils");
 const assert = require("assert");
+const { Graph } = require("@graphminer/graphs");
 
 /**
  * Gateway to entities.
@@ -433,6 +434,23 @@ class EntitySpace {
 		return found.map((t) => EntityType.fromJSON(t));
 	}
 
+	async getAllInstances() {
+		this.ensureStoreMethodExists("getEntities");
+		const found = await this.store.getEntities();
+		if (this.enforceSchema) {
+			const types = await this.getAllEntityTypes();
+			const coll = [];
+			for (const json of found) {
+				const type = _.find(types, (w) => w.name === json.typeName);
+				if (type) {
+					coll.push(Entity.fromJSON(type, json));
+				}
+			}
+		} else {
+			return found.map((u) => Entity.fromJSON(u.typeName, u));
+		}
+	}
+
 	/**
 	 * Adds an instance to the store.
 	 * - This will raise an error if an instance with the same id already exists. To update one, use the {@link upsertInstance} method.
@@ -732,8 +750,8 @@ class EntitySpace {
 		if (Utils.isEmpty(objSpec)) {
 			throw new Error("Use the 'removeObject' method to delete an object property.");
 		}
-		const objName = SpaceUtils.getValueNameFromSpecs(objectSpec);
-		if (Utils.isEmpty(objName)) {
+		const objPropertyName = SpaceUtils.getObjectNameFromSpecs(objectSpec);
+		if (Utils.isEmpty(objPropertyName)) {
 			throw new Error("Can't turn the given specs into an object property.");
 		}
 		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
@@ -757,8 +775,7 @@ class EntitySpace {
 				throw new Error("Target of the property does not exist.");
 			}
 		}
-
-		entity.objects[objName] = objId;
+		entity.setObject(objPropertyName, obj);
 		if (entity.isTyped) {
 			await this.upsertInstance(entity.entityType.name, entity);
 		} else {
@@ -768,6 +785,7 @@ class EntitySpace {
 
 	/**
 	 * Returns the instance connected via the specified object property.
+	 * If there is more than one instance connected via the given object property this will return the first one. Use the {@link getObjects} method to get all targets.
 	 * @param entitySpec {Entity} An instance.
 	 * @param objSpec {ObjectProperty|string} An object property or name.
 	 * @returns {Promise<*|null>}
@@ -790,11 +808,42 @@ class EntitySpace {
 			return null;
 		}
 		const found = entity.objects[objName];
-		if (_.isString(found)) {
-			return await this.getInstanceById(found);
-		} else {
-			return Entity.fromJSON(found.typeName, found);
+		if (Utils.isEmpty(found)) {
+			return null;
 		}
+		// maybe more than one but we return just one
+		return await this.getInstanceById(found[0]);
+	}
+
+	async getObjects(entitySpec, objSpec) {
+		const objName = SpaceUtils.getObjectNameFromSpecs(objSpec);
+		if (Utils.isEmpty(objName)) {
+			throw new Error("Can't turn the given specs into an object property.");
+		}
+		const entityId = SpaceUtils.getEntityIdFromSpecs(entitySpec);
+		if (Utils.isEmpty(entityId)) {
+			throw new Error("Can't turn the given entity specs into an entity id.");
+		}
+		const entity = await this.getInstanceById(entityId);
+
+		if (Utils.isEmpty(entity)) {
+			throw new Error("The entity was not found in the space.");
+		}
+		if (Utils.isEmpty(entity.objects)) {
+			return null;
+		}
+		const found = entity.objects[objName];
+		if (Utils.isEmpty(found)) {
+			return [];
+		}
+		const coll = [];
+		for (const id of found) {
+			const ins = await this.getInstanceById(id);
+			if (ins) {
+				coll.push(ins);
+			}
+		}
+		return coll;
 	}
 
 	/**
@@ -1077,6 +1126,34 @@ class EntitySpace {
 		return g;
 	}
 
+	importSample() {}
+
+	/**
+	 * Imports a GraphMiner Graph.
+	 * @param graph {Graph} A graph.
+	 * @param clearSpace
+	 */
+	async importGraph(graph, clearSpace = true) {
+		if (_.isNil(graph)) {
+			throw new Error(Strings.IsNil("graph", "EntitySpace.importGraph"));
+		}
+		if (clearSpace) {
+			await this.clear();
+			this.enforceSchema = false;
+		} else {
+			if (this.enforceSchema) {
+				throw new Error("Can't import a Graph when a schema is enforced since it likely has a different schema.");
+			}
+		}
+		for (const node of graph.nodes) {
+			await this.upsertInstance(node.typeName, node);
+		}
+
+		for (const edge of graph.edges) {
+			await this.connect(edge.sourceId, "link", edge.targetId);
+		}
+	}
+
 	/**
 	 * Imports the given instances into the store.
 	 * @param json {*[]} An array of instances.
@@ -1163,8 +1240,8 @@ class EntitySpace {
 			throw new Error("Target instance does not exist.");
 		}
 		const objectRelationName = _.isString(relationSpec) ? relationSpec : relationSpec.name || null;
-		if (Utils.isEmpty(objectRelationName)) {
-			throw new Error("The given relation specification is not valid");
+		if (!Utils.isSimpleString(objectRelationName)) {
+			throw new Error("The given relation specification is not valid.");
 		}
 		if (sourceEntity.entityType) {
 			const objProp = sourceEntity.entityType.getObjectProperty(objectRelationName);

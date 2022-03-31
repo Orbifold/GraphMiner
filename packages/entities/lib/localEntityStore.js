@@ -199,6 +199,10 @@ class LocalEntityStore extends EntityStore {
 		return await this.storage.find({}, this.EntityTypeCollectionName);
 	}
 
+	async getEntities() {
+		return await this.storage.find({}, this.EntityCollectionName);
+	}
+
 	/**
 	 * Removes the specified EntityType and optionally all related instances.
 	 * @param entityTypeName {string} The  type name.

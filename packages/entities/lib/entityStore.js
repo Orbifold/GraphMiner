@@ -40,6 +40,10 @@ class EntityStore {
 		throw new Error(Strings.NotImplementedAbstract());
 	}
 
+	async getEntities() {
+		throw new Error(Strings.NotImplementedAbstract());
+	}
+
 	async removeEntityType(entityTypeName, removeInstances = true) {
 		throw new Error(Strings.NotImplementedAbstract());
 	}

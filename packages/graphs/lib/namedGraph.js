@@ -5,9 +5,13 @@ const Graph = require("./graph");
  * Various named graphs.
  * The data is an export of NetworkX and the code to turn any NetworkX graph into a format digestible by GraphMiner is as follows:
  *
- *  raw = nx.node_link_data(G)
+ * import networkx as nx
+ * G = nx.karate_club_graph()
+ * raw = nx.node_link_data(G)
  * nodes = [n["id"] for n in raw["nodes"]]
  * edges = [[e["source"], e["target"]] for e in raw["links"]]
+ * print(nodes)
+ * print(edges)
  * */
 class NamedGraph {
 	/**

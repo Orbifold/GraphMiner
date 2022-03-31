@@ -5,16 +5,8 @@ const path = require("path");
 const {Utils} = require("@graphminer/Utils");
 const {LocalStorage} = require("@graphminer/store");
 const EntityStore = require("../lib/entityStore");
+const {NamedGraph} = require("@graphminer/graphs");
 
-async function NewSpace() {
-	const entities = new EntitySpace();
-	const homedir = require("os").homedir();
-	const dbPath = path.join(homedir, Utils.randomId() + ".json");
-	await entities.init(null, {
-		filePath: dbPath,
-	});
-	return [entities, dbPath];
-}
 
 describe("Entities", function () {
 	it("should create detached instances", async function () {
@@ -348,8 +340,6 @@ describe("Entities", function () {
 		let job = await jobType.createInstance("Cook");
 		await person.setObject("hasJob", job);
 		await person.setObject("hasWife", wife);
-		// console.log(person.toJSON(true));
-		// console.log(JSON.stringify(await entities.exportSchema(), null, 4));
 	});
 
 	it("should import/export the schema", async function () {
@@ -397,20 +387,7 @@ describe("Entities", function () {
 		expect(found.name).toEqual("A");
 		expect(found.typeName).toEqual("EntityType");
 	});
-	it("should manage metadata", async function () {
-		const [entities, dbPath] = await NewSpace();
-		let id = await entities.getMetadata("id");
-		expect(id).not.toBeNull();
 
-		await entities.setMetadata("id", "aa");
-		expect(await entities.getMetadata("id")).toEqual("aa");
-
-		const name = Utils.randomId();
-		const val = Utils.randomId();
-		await entities.setMetadata(name, val);
-		expect(await entities.getMetadata(name)).toEqual(val);
-		Utils.deleteFileOrDirectory(dbPath);
-	});
 	it("should import instances", async function () {
 		const entities = await EntitySpace.inMemory();
 		await entities.upsertEntityType("Book");
@@ -495,7 +472,7 @@ describe("Entities", function () {
 		const space = await EntitySpace.inMemory();
 		await space.addEntityType("A");
 		await space.addValueProperty("A", "color", "string");
-		const ins = await space.getInstances("A"); //?
+		const ins = await space.getInstances("A");
 		const car = await space.createInstance("A", {id: "a", name: "a", color: "white"});
 		let found = await space.getInstanceById(car.id);
 		expect(found.name).toEqual("a");
@@ -556,14 +533,15 @@ describe("Entities", function () {
 		const b = await Entity.untyped("B", "b");
 		let hasThrown = false;
 		try {
-			await a.setObject("link", "B");
+			a.setObject("link", "B");
 		} catch (e) {
 			hasThrown = true;
 		}
 		expect(hasThrown).toBeTruthy();
 		await a.setObject("link", b);
 		let found = await a.objects["link"];
-		expect(found.name).toEqual("b");
+		expect(found.length).toEqual(1);
+		expect(found[0].name).toEqual("b");
 		// ===================================================================
 		// with space
 		// ===================================================================
@@ -671,6 +649,64 @@ describe("Entities", function () {
 		await space.setDatabase("default");
 		found = await space.getEntityType("A");
 		expect(found).toBeNull();
+	});
 
+	it("should serialize untyped instances", function () {
+		const target1 = Entity.untyped("B");
+		const target2 = Entity.untyped("C");
+		let e = Entity.untyped("A", {a: 1, b: 2});
+		let json = e.toJSON();
+		let d = Entity.fromJSON("A", json);
+		expect(d.typeName).toEqual("A");
+		expect(d.a).toEqual(1);
+		expect(d.b).toEqual(2);
+		expect(d.id).toEqual(e.id);
+		expect(d.space).toBeNull();
+		expect(d.entityType).toBeNull();
+
+		e = Entity.untyped("A", {a: 1, b: 2});
+		e.setObject("link1", target1);
+		e.setObject("link1", target2);
+		json = e.toJSON();
+		d = Entity.fromJSON("A", json);
+		expect(d.objects["link1"].length).toEqual(2);
+		expect(d.objects["link1"][0]).toEqual(target1.id);
+		expect(d.objects["link1"][1]).toEqual(target2.id);
+	});
+
+	it("should serialize typed instances", function () {
+		const A = new EntityType("A");
+		const B = new EntityType("B");
+		const C = new EntityType("C");
+		A.addObjectProperty("toB", "B");
+		A.addObjectProperty("toC", "C");
+		const a = Entity.typed(A);
+		const b1 = Entity.typed(B);
+		const b2 = Entity.typed(B);
+		const c = Entity.typed(C);
+		a.setObject("toB", b1);
+		a.setObject("toB", b1);
+		a.setObject("toB", b2);
+		let json = a.toJSON();
+		expect(json.links.length).toEqual(1);
+		expect(_.find(json.links, {name: "toB"}).ids.length).toEqual(2);
+		expect(_.find(json.links, {name: "toC"})).toBeUndefined();
+		a.setObject("toC", c);
+		json = a.toJSON();
+		expect(_.find(json.links, {name: "toC"}).ids.length).toEqual(1);
+	});
+	it("should import a GraphMiner graph", async function () {
+		let g = NamedGraph.path(3);
+		let space = await EntitySpace.inMemory();
+		await space.importGraph(g);
+		let types = await space.getAllEntityTypes();
+		expect(types.length).toEqual(0);
+		expect(space.enforceSchema).toBeFalsy();
+		let ins = await space.getAllInstances();
+		expect(ins.length).toEqual(3);
+		// it's indeed a path graph
+		expect(ins[0].getObjects("link").length).toEqual(1);
+		expect(ins[1].getObjects("link").length).toEqual(1);
+		expect(ins[2].getObjects("link").length).toEqual(0);
 	});
 });
