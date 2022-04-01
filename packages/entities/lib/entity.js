@@ -1,7 +1,7 @@
 const { Utils, Strings } = require("@graphminer/Utils");
 const EntityBase = require("./entityBase");
 const _ = require("lodash");
-const SpaceUtils = require("./utils");
+const SpaceUtils = require("./spaceUtils");
 
 /**
  * **Entity** or **instance** defines a concrete piece of data based on a predefined type.
@@ -264,7 +264,7 @@ class Entity extends EntityBase {
 	 * @param save {boolean} Whether to save the instance after setting the value.
 	 */
 	setValue(valuePropertyName, value, throwError = true) {
-		SpaceUtils.isValidValue(value);
+		SpaceUtils.isSimpleValue(value);
 		if (this.isUntyped) {
 			if (_.includes(["id", "name", "description"], valuePropertyName)) {
 				this[valuePropertyName] = value;
@@ -323,7 +323,7 @@ class Entity extends EntityBase {
 						throw new Error("Can only assign a string to id, name or description.");
 					}
 				} else {
-					SpaceUtils.isValidValue(v);
+					SpaceUtils.isSimpleValue(v);
 					this.values[k] = v;
 				}
 			});

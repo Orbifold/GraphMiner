@@ -4,7 +4,7 @@ const EntityType = require("./entityType");
 const Entity = require("./entity");
 const ValueProperty = require("./valueProperty");
 const ObjectProperty = require("./objectProperty");
-const SpaceUtils = require("./utils");
+const SpaceUtils = require("./spaceUtils");
 const assert = require("assert");
 const { Graph } = require("@graphminer/graphs");
 
@@ -25,6 +25,11 @@ const { Graph } = require("@graphminer/graphs");
 class EntitySpace {
 	#store;
 
+	/**
+	 * Returns the name of the active database.
+	 * Note that a space always has a 'default' database.
+	 * @returns {string}
+	 */
 	get database() {
 		return this.#store.database;
 	}
@@ -60,8 +65,6 @@ class EntitySpace {
 	get store() {
 		return this.#store;
 	}
-
-	constructor() {}
 
 	/**
 	 * Creates an in-memory entity space.
@@ -148,16 +151,48 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Checks whether there is a database with the specified name.
+	 * @param dbName {string} A simple (alphanumeric) name.
+	 * @returns {Promise<boolean>}
+	 */
 	async databaseExists(dbName) {
+		if (!Utils.isSimpleString(dbName)) {
+			throw new Error("A database name should be alphanumeric and not start with a number.");
+		}
 		return this.#store.databaseExists(dbName);
 	}
 
+	/**
+	 * Creates a database with the specified name.
+	 * @param dbName {string} A simple (alphanumeric) name.
+	 * @returns {Promise<void>}
+	 */
 	async createDatabase(dbName) {
+		if (!Utils.isSimpleString(dbName)) {
+			throw new Error("A database name should be alphanumeric and not start with a number.");
+		}
 		return this.#store.createDatabase(dbName);
 	}
 
+	/**
+	 * Removes the database with the specified name.
+	 * @param dbName {string} A simple (alphanumeric) name.
+	 * @returns {Promise<void>}
+	 */
 	async removeDatabase(dbName) {
+		if (!Utils.isSimpleString(dbName)) {
+			throw new Error("A database name should be alphanumeric and not start with a number.");
+		}
 		return this.#store.removeDatabase(dbName);
+	}
+
+	/**
+	 * Gets all registered databases.
+	 * @returns {Promise<string[]>}
+	 */
+	async getDatabaseNames() {
+		return this.#store.getDatabaseNames();
 	}
 
 	/**
@@ -457,6 +492,10 @@ class EntitySpace {
 		return found.map((t) => EntityType.fromJSON(t));
 	}
 
+	/**
+	 * Returns all instances in the current database.
+	 * @returns {Promise<Entity[]>}
+	 */
 	async getAllInstances() {
 		this.ensureStoreMethodExists("getEntities");
 		const found = await this.store.getEntities();
@@ -469,6 +508,7 @@ class EntitySpace {
 					coll.push(Entity.fromJSON(type, json));
 				}
 			}
+			return coll;
 		} else {
 			return found.map((u) => Entity.fromJSON(u.typeName, u));
 		}
@@ -622,17 +662,6 @@ class EntitySpace {
 		}
 		if (Utils.isEmpty(this.store[methodName])) {
 			throw new Error(Strings.NotImplementedMethod(methodName, "the storage"));
-		}
-	}
-
-	async checkEntityTypeIsInSchema(entityTypeSpec) {
-		if (!this.settings.enforceSchema) {
-			return;
-		}
-		const entityTypeName = SpaceUtils.getTypeNameFromSpecs(entityTypeSpec);
-		const found = await this.entityTypeExists(entityTypeName);
-		if (!found) {
-			throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 		}
 	}
 
@@ -809,9 +838,10 @@ class EntitySpace {
 	/**
 	 * Returns the instance connected via the specified object property.
 	 * If there is more than one instance connected via the given object property this will return the first one. Use the {@link getObjects} method to get all targets.
+	 * @see getObjects
 	 * @param entitySpec {Entity} An instance.
 	 * @param objSpec {ObjectProperty|string} An object property or name.
-	 * @returns {Promise<*|null>}
+	 * @returns {Promise<Entity|null>}
 	 */
 	async getObject(entitySpec, objSpec) {
 		const objName = SpaceUtils.getObjectNameFromSpecs(objSpec);
@@ -838,6 +868,13 @@ class EntitySpace {
 		return await this.getInstanceById(found[0]);
 	}
 
+	/**
+	 * Gets the target instances of a relation (object property).
+	 * @see getObject
+	 * @param entitySpec {Entity} An instance.
+	 * @param objSpec {ObjectProperty|string} An object property or name.
+	 * @returns {Promise<Entity[]|null>}
+	 */
 	async getObjects(entitySpec, objSpec) {
 		const objName = SpaceUtils.getObjectNameFromSpecs(objSpec);
 		if (Utils.isEmpty(objName)) {
@@ -1070,6 +1107,11 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Updates the given entity type.
+	 * @param entityType {EntityType} An entity type to update.
+	 * @returns {Promise<void>}
+	 */
 	async updateEntityType(entityType) {
 		if (Utils.isEmpty(entityType)) {
 			throw new Error(Strings.IsNil("entityType", "Entities.updateEntityType"));
@@ -1136,11 +1178,19 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Exports the instances and their relations in a JSON structure with
+	 * 'nodes' and 'edges' arrays. The export also includes the metadata assigned to the database.
+	 * @returns {Promise<{nodes: *[], edges: *[]}>}
+	 */
 	async exportGraphJson() {
 		const g = {
 			nodes: [],
 			edges: [],
 		};
+		// merge the metadata
+		const meta = await this.getMetadata();
+		_.assign(g, meta);
 		const ins = await this.getInstances();
 		for (const n of ins) {
 			g.nodes.push({
@@ -1162,8 +1212,6 @@ class EntitySpace {
 		}
 		return g;
 	}
-
-	importSample() {}
 
 	/**
 	 * Imports a GraphMiner Graph.
@@ -1217,6 +1265,12 @@ class EntitySpace {
 		}
 	}
 
+	/**
+	 * Imports an entity space.
+	 * @param json {*} A serialized space.
+	 * @param replace {boolean} If true the space will be cleared before import.
+	 * @returns {Promise<void>}
+	 */
 	async importEntitySpace(json, replace = false) {
 		if (Utils.isEmpty(json)) {
 			throw new Error(Strings.IsNil("json", "EntitySpace.importInstances"));
@@ -1238,14 +1292,31 @@ class EntitySpace {
 		await this.store.assignMetadata(metadata);
 	}
 
+	/**
+	 * Returns all the metadata or the value of the specified name.
+	 * @param [name=null] {string} Optional name of a key.
+	 * @returns {Promise<*>}
+	 */
 	async getMetadata(name = null) {
 		return await this.store.getMetadata(name);
 	}
 
+	/**
+	 * Adds a key-value pair to the metadata.
+	 * @param name {string} A key.
+	 * @param value {*} A simple value (string, number...).
+	 * @returns {Promise<*>}
+	 */
 	async setMetadata(name, value) {
+		// will throw if a complex object is given
+		SpaceUtils.isSimpleValue(value);
 		return await this.store.setMetadata(name, value);
 	}
 
+	/**
+	 * Saves the space if the underlying storage supports it.
+	 * @returns {Promise<*>}
+	 */
 	async save() {
 		if (this.store && this.store.save) {
 			return await this.store.save();

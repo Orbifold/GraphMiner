@@ -563,6 +563,10 @@ class LocalStorage extends Store {
 		this.#db.removeCollection(collectionName);
 	}
 
+	/**
+	 * Returns the names of the collections.
+	 * @returns {Promise<string[]>}
+	 */
 	async listCollections() {
 		this.#ensureInit();
 		return this.#db.listCollections().map((c) => c.name);

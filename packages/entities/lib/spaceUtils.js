@@ -8,6 +8,7 @@ class SpaceUtils {
 	/**
 	 * Returns a value name from the given specs if possible.
 	 * @param valueSpec {*}
+	 * @param throwErrorIfNil
 	 * @returns {string|null}
 	 */
 	static getValueNameFromSpecs(valueSpec, throwErrorIfNil = true) {
@@ -88,6 +89,12 @@ class SpaceUtils {
 		}
 	}
 
+	/**
+	 * Returns an id from the given object.
+	 * @param obj {*} Anything.
+	 * @param throwErrorIfNil
+	 * @returns {null|*}
+	 */
 	static getIdFromSpecs(obj, throwErrorIfNil = true) {
 		if (Utils.isEmpty(obj)) {
 			if (throwErrorIfNil) {
@@ -127,6 +134,10 @@ class SpaceUtils {
 		return entityType;
 	}
 
+	/**
+	 * Detaches the given entity from the space it belongs to.
+	 * @param entity {Entity} An entity.
+	 */
 	static detachEntity(entity) {
 		const Entity = require("./entity");
 		if (Utils.isEmpty(entity)) {
@@ -140,7 +151,12 @@ class SpaceUtils {
 		}
 	}
 
-	static isValidValue(value) {
+	/**
+	 * Checks that the given value is a simple type.
+	 * This check ensures that assigned values are not complex objects.
+	 * @param value {*} Anything.
+	 */
+	static isSimpleValue(value) {
 		const allowed = [_.isNumber, _.isNil, _.isString, _.isArray, _.isBoolean];
 		if (
 			!_.some(
@@ -150,6 +166,11 @@ class SpaceUtils {
 		) {
 			throw new Error("A value can only be a simple type or nil.");
 		}
+		// go down the tree
+		if (_.isArray(value)) {
+			value.forEach((u) => SpaceUtils.isSimpleValue(u));
+		}
+		return true;
 	}
 
 	static isValidObject(obj, objectProperty = null) {
