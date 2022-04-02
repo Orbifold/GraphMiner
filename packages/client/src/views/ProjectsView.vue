@@ -32,9 +32,10 @@
 <script lang="ts">
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
+  import VueBase from "@/views/vueBase";
 
 	@Component({})
-	export default class ProjectsView extends Vue {
+	export default class ProjectsView extends VueBase {
 		showRight: boolean = true;
 		showLeft: boolean = true;
 		data: any[][] = [];
@@ -53,7 +54,6 @@
 
 		async addNewProject() {
 			await this.$dataService.createProject(`Project${Utils.randomId()}`);
-
 			await this.refresh();
 		}
 

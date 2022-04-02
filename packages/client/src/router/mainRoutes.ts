@@ -5,6 +5,7 @@ import DoubleDataView from "@/views/DoubleDataView.vue";
 import ExploreView from "@/views/ExploreView.vue";
 import CreateWidgetView from "@/views/CreateWidgetView.vue";
 import DashboardsView from "@/views/DashboardsView.vue";
+import DashboardView from "@/views/DashboardView.vue";
 import ProjectView from "@/views/ProjectView.vue";
 
 export default [
@@ -32,6 +33,11 @@ export default [
 		path: "/dashboards",
 		name: "Dashboards",
 		component: DashboardsView,
+	},
+	{
+		path: "/dashboard",
+		name: "Dashboard",
+		component: DashboardView,
 	},
 	{
 		path: "/double",

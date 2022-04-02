@@ -53,7 +53,7 @@
 		}
 
 		async addDashboard() {
-			await this.$dataService.createDashboard(`Dashboard${Utils.randomId()}`);
+			await this.$dataService.createDashboard(this.project.id,`Dashboard${Utils.randomId()}`);
 			await this.refresh();
 		}
 

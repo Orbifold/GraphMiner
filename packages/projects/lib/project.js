@@ -35,7 +35,7 @@ class Project {
 			p.id = json.id;
 		}
 		if (Utils.isDefined(json.dashboards)) {
-			this.dashboards = json.dashboards.map((d) => Dashboard.fromJSON(d));
+			p.dashboards = json.dashboards.map((d) => Dashboard.fromJSON(d));
 		}
 		return p;
 	}

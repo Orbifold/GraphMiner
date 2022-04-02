@@ -14,6 +14,7 @@ class Dashboard {
 	constructor(name) {
 		this.name = name;
 		this.widgets = [];
+		this.id=Utils.id();
 	}
 
 	toJSON() {

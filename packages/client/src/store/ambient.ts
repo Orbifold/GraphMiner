@@ -4,14 +4,14 @@ export default {
 	namespaced: true,
 	state: {
 		isLoggedIn: false,
-		projectId: null,
+		project: null,
 	},
 	mutations: {
 		setLoggedIn(state, value) {
 			state.isLoggedIn = value;
 		},
-		setProjectId(state, value) {
-			state.projectId = value;
+		setProject(state, value) {
+			state.project = value;
 		},
 	},
 	actions: {},

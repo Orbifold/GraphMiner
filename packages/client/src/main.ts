@@ -8,7 +8,7 @@ import LocalDataService from "@/services/LocalDataService";
 import AmbientService from "@/services/AmbientService";
 
 import VueMousetrapPlugin from "vue-mousetrap/vue2";
-import DataService from "@/services/dataService";
+import DataService from "@/services/DataService";
 
 Vue.config.productionTip = false;
 

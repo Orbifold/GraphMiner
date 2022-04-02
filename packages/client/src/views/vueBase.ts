@@ -1,7 +1,7 @@
 import { Component, Vue } from "vue-property-decorator";
 import { Utils } from "@graphminer/utils";
+import {Project, Dashboard} from "@graphminer/projects";
 
-import * as _ from "lodash";
 import { NotificationType } from "@/shared/notificationType";
 
 /*
@@ -10,7 +10,10 @@ import { NotificationType } from "@/shared/notificationType";
  * */
 
 export default class VueBase extends Vue {
-	projectId: string = null;
+
+	get project(){
+		return this.$store.state.ambient.project;
+	}
 
 	/**
 	 * Returns whether there currently is a logged in user.
@@ -68,11 +71,12 @@ export default class VueBase extends Vue {
 	}
 
 	async ensureActiveProject() {
-		this.projectId = this.$store.state.ambient.projectId;
-		if (Utils.isEmpty(this.projectId)) {
+
+		if (Utils.isEmpty(this.project)) {
 			this.$ambientService.notify("Select a project first.", NotificationType.Error);
 			await new Promise((r) => setTimeout(r, 500));
 			return this.$ambientService.navigateTo("Projects");
 		}
+
 	}
 }
