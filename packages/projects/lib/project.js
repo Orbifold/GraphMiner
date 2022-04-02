@@ -1,4 +1,5 @@
 const { Utils } = require("@graphminer/utils");
+const Dashboard = require("./dashboard");
 
 /*
  * Defines a GraphMiner project.
@@ -7,12 +8,14 @@ class Project {
 	name;
 	description = null;
 	timestamp;
+	dashboards = [];
 
 	constructor(name = null, description = null) {
 		this.id = Utils.id();
 		this.name = name;
 		this.description = description;
 		this.timestamp = Date.now();
+		this.dashboards = [];
 	}
 
 	toJSON() {
@@ -21,6 +24,7 @@ class Project {
 			name: this.name,
 			description: this.description,
 			timestamp: this.timestamp,
+			dashboards: this.dashboards.map((d) => d.toJSON()),
 		};
 	}
 
@@ -29,6 +33,9 @@ class Project {
 		p.timestamp = json.timestamp;
 		if (Utils.isDefined(json.id)) {
 			p.id = json.id;
+		}
+		if (Utils.isDefined(json.dashboards)) {
+			this.dashboards = json.dashboards.map((d) => Dashboard.fromJSON(d));
 		}
 		return p;
 	}

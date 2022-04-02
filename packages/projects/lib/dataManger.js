@@ -4,6 +4,8 @@ const { NamedGraph, RandomGraph } = require("@graphminer/graphs");
 const ProjectUtils = require("./projectUtils");
 const Project = require("./project");
 const ProjectManager = require("./projectManager");
+const WidgetManager = require("./widgetManager");
+const Dashboard = require("./dashboard");
 
 /*
  * Manages all data of GraphMiner client by extending the EntitySpace with
@@ -23,14 +25,20 @@ class DataManger {
 	 */
 	entitySpace;
 
+	/**
+	 *
+	 * @type {Project}
+	 */
 	activeProject = null;
+	widgetManager;
 
 	static async browser() {
 		const space = await EntitySpace.browser();
 		const storage = space.store.storage;
 		// matters to use the same storage, seems LokiJS does not like multiple instances
 		const pm = new ProjectManager(storage);
-		return new DataManger(pm, space);
+		const wm = new WidgetManager(storage);
+		return new DataManger(pm, space, wm);
 	}
 
 	static async inMemory() {
@@ -41,9 +49,10 @@ class DataManger {
 		return new DataManger(pm, space);
 	}
 
-	constructor(projectManager, entitySpace) {
+	constructor(projectManager, entitySpace, widgetManager) {
 		this.projectManager = projectManager;
 		this.entitySpace = entitySpace;
+		this.widgetManager = widgetManager;
 	}
 
 	async setActiveProject(projectId) {
@@ -90,6 +99,39 @@ class DataManger {
 			return null;
 		}
 		return await this.entitySpace.exportGraphJson();
+	}
+
+	async upsertWidget(widget) {
+		return this.widgetManager.upsertWidget(widget);
+	}
+
+	async getWidgetById(id) {
+		return this.widgetManager.getWidgetById(id);
+	}
+
+	async getAllDashboards() {
+		this.ensureActiveProject();
+		return this.activeProject.dashboards || [];
+	}
+
+	ensureActiveProject() {
+		if (Utils.isEmpty(this.activeProject)) {
+			throw new Error("No active project.");
+		}
+	}
+
+	async createDashboard(name) {
+		this.ensureActiveProject();
+		const db = new Dashboard(name);
+		this.activeProject.dashboards.push(db);
+		await this.save();
+		return db;
+	}
+
+	async save() {
+		if (this.activeProject) {
+			await this.projectManager.upsertProject(this.activeProject);
+		}
 	}
 }
 

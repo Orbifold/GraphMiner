@@ -3,7 +3,7 @@
 		<v-row>
 			<v-col cols="2"><h1>Projects</h1></v-col>
 			<v-col>
-				<v-btn @click="addNewProject" depressed color="success" class="float-right">New Project</v-btn>
+				<v-btn @click="addDashboard" depressed color="success" class="float-right">New Dashboard</v-btn>
 			</v-col>
 		</v-row>
 
@@ -13,15 +13,14 @@
 				<v-card class="mx-auto" max-width="400" color="primary3 " flat>
 					<v-card-title>{{ item.name }}</v-card-title>
 					<v-card-subtitle class="pb-0">
-						<v-chip class="mt-2 mb-2" color="primary2" text-color="white" x-small>Project</v-chip>
+						<v-chip class="mt-2 mb-2" color="secondary" text-color="white" x-small>Dashboard</v-chip>
 					</v-card-subtitle>
 					<v-card-text class="text--primary">
 						<div>{{ item.description }}</div>
 					</v-card-text>
 
 					<v-card-actions>
-						<v-btn color="primary6" text @click="openProject(item.id)"> Open</v-btn>
-						<v-btn color="secondary" text @click="exploreProject(item.id)"> Explore</v-btn>
+						<v-btn color="secondary" text @click="openDashboard(item.id)"> Open</v-btn>
 					</v-card-actions>
 				</v-card>
 			</v-col>
@@ -32,9 +31,10 @@
 <script lang="ts">
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
+	import VueBase from "@/views/vueBase";
 
 	@Component({})
-	export default class ProjectsView extends Vue {
+	export default class DashboardsView extends VueBase {
 		showRight: boolean = true;
 		showLeft: boolean = true;
 		data: any[][] = [];
@@ -48,17 +48,17 @@
 		}
 
 		async mounted() {
+			await this.ensureActiveProject();
 			await this.refresh();
 		}
 
-		async addNewProject() {
-			await this.$dataService.createProject(`Project${Utils.randomId()}`);
-
+		async addDashboard() {
+			await this.$dataService.createDashboard(`Dashboard${Utils.randomId()}`);
 			await this.refresh();
 		}
 
 		async refresh() {
-			const all = await this.$dataService.getAllProjects();
+			const all = await this.$dataService.getAllDashboards();
 			const blocks = [];
 			let currentBlock = [];
 			while (all.length > 0) {
@@ -75,17 +75,7 @@
 			this.data = blocks;
 		}
 
-		async exploreProject(projectId) {
-			await this.$dataService.setActiveProject(projectId);
-			await new Promise((r) => setTimeout(r, 500));
-			this.$ambientService.navigateTo("Explore");
-		}
-
-		async openProject(projectId) {
-			await this.$dataService.setActiveProject(projectId);
-			await new Promise((r) => setTimeout(r, 500));
-			this.$ambientService.navigateTo("Project");
-		}
+		async openDashboard(dashboardId) {}
 	}
 </script>
 

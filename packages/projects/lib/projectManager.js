@@ -79,6 +79,8 @@ class ProjectManager {
 		const found = await this.storage.findOne({ name: projectName }, this.ProjectsCollectionName);
 		return Utils.isDefined(found);
 	}
+
+	async getAllDashboards() {}
 }
 
 module.exports = ProjectManager;

@@ -93,6 +93,7 @@
 	import { Utils } from "@graphminer/utils";
 	import * as _ from "lodash";
 	import { NotificationType } from "@/shared/notificationType";
+	import VueBase from "@/views/vueBase";
 
 	const $ = go.GraphObject.make;
 
@@ -140,7 +141,7 @@
 	@Component({
 		components: { Splitpanes, Pane },
 	})
-	export default class ExploreView extends Vue {
+	export default class ExploreView extends VueBase {
 		// region Fields
 		showRight: boolean = true;
 		showLeft: boolean = false;
@@ -156,7 +157,7 @@
 		dataTypes: string[] = ["String", "Number", "Boolean"];
 		private diagram: go.Diagram;
 		private nodeData: any = null;
-		projectId: string = null;
+
 		// endregion
 
 		//region Properties
@@ -174,12 +175,7 @@
 
 		//region Methods
 		async mounted() {
-			this.projectId = this.$store.state.ambient.projectId;
-			if (Utils.isEmpty(this.projectId)) {
-				this.$ambientService.notify("Select a project first.", NotificationType.Error);
-				await new Promise((r) => setTimeout(r, 1000));
-				return this.$ambientService.navigateTo("Projects");
-			}
+			await this.ensureActiveProject();
 			this.createDiagram();
 		}
 
