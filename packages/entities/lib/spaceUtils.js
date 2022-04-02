@@ -164,7 +164,7 @@ class SpaceUtils {
 				(u) => u === true,
 			)
 		) {
-			throw new Error("A value can only be a simple type or nil.");
+			throw new Error(`A value can only be a simple type or nil. Was given '${typeof value}'.`);
 		}
 		// go down the tree
 		if (_.isArray(value)) {

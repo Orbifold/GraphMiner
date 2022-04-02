@@ -92,6 +92,11 @@ class Entity extends EntityBase {
 			if (_.isString(entitySpec)) {
 				entity.name = entitySpec.toString().trim();
 			} else if (_.isPlainObject(entitySpec)) {
+				// can contain object props as well
+				if (entitySpec.links) {
+					throw new Error("Defining a typed entity with object properties is not possible through this method. Use the EntitySpace instead.");
+				}
+				// whatever remains are value props
 				entity.setValues(entitySpec);
 			} else if (_.isObject(entitySpec)) {
 				// if toJSON is defined this will use it
@@ -455,7 +460,10 @@ class Entity extends EntityBase {
 		return this.objects[objPropertyName]?.[0];
 	}
 
-	getObjects(objectPropertySpec) {
+	getObjects(objectPropertySpec = null) {
+		if (Utils.isEmpty(objectPropertySpec)) {
+			return this.objects;
+		}
 		const objPropertyName = SpaceUtils.getObjectNameFromSpecs(objectPropertySpec);
 		return this.objects[objPropertyName] || [];
 	}

@@ -18,14 +18,20 @@ class EntityType extends EntityBase {
 	 * Creates a new entity type (class).
 	 *
 	 * @param entityTypeName {string} The name of the new type.
+	 * @param valueProps
 	 */
-	constructor(entityTypeName) {
+	constructor(entityTypeName, valueProps = null) {
 		if (Utils.isEmpty(entityTypeName)) {
 			throw new Error(Strings.IsNil("entityTypeName", "EntityType"));
 		}
 		super("EntityType", entityTypeName);
 		this.#valueProperties = [];
 		this.#objectProperties = [];
+		if (Utils.isDefined(valueProps)) {
+			for (const name in valueProps) {
+				this.addValueProperty(name, valueProps[name]);
+			}
+		}
 	}
 
 	get valueProperties() {

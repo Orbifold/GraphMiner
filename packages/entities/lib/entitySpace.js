@@ -28,7 +28,7 @@ class EntitySpace {
 	/**
 	 * Returns the name of the active database.
 	 * Note that a space always has a 'default' database.
-	 * @returns {string}
+	 * @returns {string|null}
 	 */
 	get database() {
 		return this.#store.database;
@@ -1024,9 +1024,9 @@ class EntitySpace {
 				throw new Error(Strings.TypeDoesNotExist(entityTypeName));
 			}
 			// since detached, obviously shouldn't save it
-			entity = await Entity.typed(entityType, entitySpec, false);
+			entity = Entity.typed(entityType, entitySpec);
 		} else {
-			entity = await Entity.untyped(entityTypeName, entitySpec, false);
+			entity = Entity.untyped(entityTypeName, entitySpec);
 		}
 		entity.space = null;
 		SpaceUtils.detachEntity(entity);
@@ -1256,12 +1256,32 @@ class EntitySpace {
 			this.ensureStoreMethodExists("clear");
 			await this.store.clear(false, true);
 		}
-		for (const entity of json) {
-			const entityTypeName = entity.typeName;
+		let links = [];
+		const entityDic = {};
+		for (const j of json) {
+			const entityTypeName = j.typeName;
 			if (Utils.isEmpty(entityTypeName)) {
 				throw new Error(Strings.IsNil("entity.name", "EntitySpace.importInstances"));
 			}
-			await this.upsertInstance(entityTypeName, entity);
+			// the 'links' attrib contains connections and needs to be handled after the instances are imported
+			if (j.links) {
+				// each link item looks like {name, ids} and is missing the source if we take it out
+				j.links.forEach((link) => (link.sourceId = j.id));
+				links = links.concat(j.links);
+				delete j.links;
+			}
+			const entity = await this.upsertInstance(entityTypeName, j);
+			entityDic[entity.id] = entity;
+		}
+		// now we can connect things
+		for (const link of links) {
+			for (const targetId of link.ids) {
+				const target = entityDic[targetId];
+				const source = entityDic[link.sourceId];
+				if (Utils.isDefined(source) && Utils.isDefined(target)) {
+					await this.connect(source, link.name, target);
+				}
+			}
 		}
 	}
 
@@ -1269,9 +1289,20 @@ class EntitySpace {
 	 * Imports an entity space.
 	 * @param json {*} A serialized space.
 	 * @param replace {boolean} If true the space will be cleared before import.
+	 * @param [database=null] {string|null} If null the current database will be used, otherwise the given one will ingest the given data. If the database does not exist it will be created.
 	 * @returns {Promise<void>}
 	 */
-	async importEntitySpace(json, replace = false) {
+	async importEntitySpace(json, replace = false, database = null) {
+		let currentDatabase = this.database;
+		if (Utils.isDefined(database)) {
+			if (database !== currentDatabase) {
+				const exists = await this.databaseExists(database);
+				if (!exists) {
+					await this.createDatabase(database);
+				}
+				await this.setDatabase(database);
+			}
+		}
 		if (Utils.isEmpty(json)) {
 			throw new Error(Strings.IsNil("json", "EntitySpace.importInstances"));
 		}
@@ -1279,17 +1310,21 @@ class EntitySpace {
 			this.ensureStoreMethodExists("clear");
 			await this.store.clear(true, true);
 		}
-		const entityTypes = json.entityTypes;
-		delete json.entityTypes;
-		const entities = json.entities;
-		delete json.entities;
+		const schema = json.schema;
+		delete json.schema;
+		const instances = json.data;
+		delete json.data;
 		const metadata = json;
 		// first the types
-		await this.importSchema(entityTypes, false);
+		await this.importSchema(schema, false);
 		// the entities
-		await this.importInstances(entities, false);
+		await this.importInstances(instances, false);
 		// the metadata
 		await this.store.assignMetadata(metadata);
+		// set back the database before import
+		if (currentDatabase !== this.database) {
+			await this.setDatabase(currentDatabase);
+		}
 	}
 
 	/**
@@ -1361,6 +1396,117 @@ class EntitySpace {
 		} else {
 			sourceEntity.setObject(objectRelationName, targetEntity);
 			await this.upsertInstance(sourceEntity.typeName, sourceEntity);
+		}
+	}
+
+	/**
+	 * Exports the current database.
+	 * @returns {Promise<*>}
+	 */
+	async exportEntitySpace() {
+		const exp = {};
+		const metadata = await this.getMetadata();
+		_.assign(exp, metadata);
+		// exportSchema also exports metadata for import of schema only
+		exp.schema = (await this.exportSchema()).entityTypes;
+		exp.data = (await this.getAllInstances()).map((ins) => ins.toJSON());
+		return exp;
+	}
+
+	/**
+	 * Fetches the connections (object properties) between the given instances.
+	 * @param sourceSpec {Entity|string|*} A source entity specification.
+	 * @param targetSpec {Entity|string|*} A target entity specification.
+	 * @param [name=null] {string|null} Optional name of the relation. If not specified all will be returned.
+	 * @param fetchInstances {boolean} If true the instances will be added otherwise only the id's will be returned.
+	 * @returns {Promise<*[]>}
+	 */
+	async getConnectionsBetween(sourceSpec, targetSpec, name = null, fetchInstances = false) {
+		const sourceId = SpaceUtils.getIdFromSpecs(sourceSpec);
+		const targetId = SpaceUtils.getIdFromSpecs(targetSpec);
+		if (Utils.isEmpty(sourceId) || Utils.isEmpty(targetId)) {
+			return [];
+		}
+		const source = await this.getInstanceById(sourceId);
+		const target = await this.getInstanceById(targetId);
+		if (Utils.isEmpty(source)) {
+			return [];
+		}
+		let objs = source.getObjects();
+		if (Utils.isEmpty(objs)) {
+			return [];
+		}
+		let result = [];
+		if (Utils.isDefined(name)) {
+			if (Utils.isDefined(objs[name])) {
+				const ids = objs[name].ids;
+				if (_.includes(ids, targetId)) {
+					const item = {
+						name,
+						sourceId,
+						targetId,
+					};
+					if (fetchInstances) {
+						item.source = source;
+						item.target = target;
+					}
+					result.push(item);
+				}
+			}
+		} else {
+			const allNames = _.keys(objs);
+			for (const name of allNames) {
+				const ids = objs[name];
+				for (const id of ids) {
+					const link = {
+						name,
+						sourceId,
+						targetId: id,
+					};
+					result.push(link);
+					if (fetchInstances) {
+						link.source = source;
+						link.target = await this.getInstanceById(id);
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Returns whether the specified instances are connected.
+	 * @param sourceSpec {Entity|string|*} A source entity specification.
+	 * @param targetSpec {Entity|string|*} A target entity specification.
+	 * @param bothDirections {boolean} If true both directions will be checked.
+	 * @returns {Promise<boolean>}
+	 */
+	async areConnected(sourceSpec, targetSpec, bothDirections = false) {
+		if (bothDirections) {
+			const direct = await this.getConnectionsBetween(sourceSpec, targetSpec, null, false);
+			const reverse = await this.getConnectionsBetween(targetSpec, sourceSpec, null, false);
+			return direct.length > 0 || reverse.length > 0;
+		} else {
+			const all = await this.getConnectionsBetween(sourceSpec, targetSpec, null, false);
+			return all.length > 0;
+		}
+	}
+
+	/**
+	 * Returns the names of the relations, if any, between the specified instances.
+	 * @param sourceSpec {Entity|string|*} A source entity specification.
+	 * @param targetSpec {Entity|string|*} A target entity specification.
+	 * @param bothDirections {boolean} If true both directions will be checked.
+	 * @returns {Promise<boolean>}
+	 */
+	async getConnectionNamesBetween(sourceSpec, targetSpec, bothDirections = false) {
+		if (bothDirections) {
+			const direct = await this.getConnectionsBetween(sourceSpec, targetSpec, null, false);
+			const reverse = await this.getConnectionsBetween(targetSpec, sourceSpec, null, false);
+			return _.uniq(direct.concat(reverse).map((c) => c.name));
+		} else {
+			const all = await this.getConnectionsBetween(sourceSpec, targetSpec, null, false);
+			return _.uniq(all.map((c) => c.name));
 		}
 	}
 }
