@@ -1028,7 +1028,7 @@ class EntitySpace {
 		} else {
 			entity = Entity.untyped(entityTypeName, entitySpec);
 		}
-		entity.space = null;
+
 		SpaceUtils.detachEntity(entity);
 		return entity;
 	}
@@ -1191,24 +1191,22 @@ class EntitySpace {
 		// merge the metadata
 		const meta = await this.getMetadata();
 		_.assign(g, meta);
-		const ins = await this.getInstances();
+		const ins = (await this.getInstances()).map((e) => e.toJSON());
 		for (const n of ins) {
-			g.nodes.push({
-				id: n.id,
-				name: n.name,
-				typeName: n.typeName || "Unknown",
-			});
-			const names = _.keys(n.objects);
-			for (const linkName of names) {
-				const links = n.objects[linkName];
-				for (const id of links) {
+			g.nodes.push(n);
+
+			for (const link of n.links) {
+				const ids = link.ids;
+				for (const id of ids) {
 					g.edges.push({
 						sourceId: n.id,
-						name: linkName,
+						name: link.name,
 						targetId: id,
 					});
 				}
 			}
+			// the linking should sit only in the edges collection
+			delete n.links;
 		}
 		return g;
 	}
@@ -1237,6 +1235,37 @@ class EntitySpace {
 		for (const edge of graph.edges) {
 			await this.connect(edge.sourceId, "link", edge.targetId);
 		}
+	}
+
+	/**
+	 * Exports the knowledge graph as a GraphMiner Graph.
+	 * @returns {Promise<Graph>}
+	 */
+	async exportGraph() {
+		const g = Graph.empty();
+		// assign the metadata
+		const meta = await this.getMetadata();
+		_.assign(g, meta);
+		const ins = (await this.getInstances()).map((e) => e.toJSON());
+		let links = [];
+		for (const n of ins) {
+			g.addNode(n);
+			n.links.forEach((l) => (l.sourceId = n.id));
+			links = links.concat(n.links);
+			// the linking should sit only in the edges collection
+			delete n.links;
+		}
+		for (const link of links) {
+			const ids = link.ids;
+			for (const id of ids) {
+				g.addEdge({
+					sourceId: link.sourceId,
+					name: link.name,
+					targetId: id,
+				});
+			}
+		}
+		return g;
 	}
 
 	/**

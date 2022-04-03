@@ -2,6 +2,8 @@ const _ = require("lodash");
 const { Utils, Strings } = require("@graphminer/Utils");
 
 class GraphUtils {
+	static GenericLinkTypeName = "Link";
+
 	static getNodeFromSpecs(...nodeSpecs) {
 		const [count, args] = Utils.getArguments(nodeSpecs);
 
@@ -65,23 +67,46 @@ class GraphUtils {
      */
 	static getEdgeFromSpecs(...edgeSpecs) {
 		const [count, args] = Utils.getArguments(edgeSpecs);
+		let source, target, extra;
 		switch (count) {
 			case 0:
 				throw new Error("Could not turn the given input into an edge definition.");
 			case 1:
 				return GraphUtils.getEdgeFromSpecsOneArgument(args[0]);
 			case 2:
-				const source = args[0];
-				const target = args[1];
+				source = args[0];
+				target = args[1];
 				if (Utils.isStringOrNumber(source) && Utils.isStringOrNumber(target)) {
 					return {
 						sourceId: source.toString(),
 						targetId: target.toString(),
-						typeName: "GenericLink",
+						typeName: GraphUtils.GenericLinkTypeName,
 					};
 				} else {
 					throw new Error("Could not turn the given input into an edge definition.");
 				}
+			case 3:
+				source = args[0];
+				target = args[1];
+				extra = args[2];
+				let edge;
+				if (Utils.isStringOrNumber(source) && Utils.isStringOrNumber(target)) {
+					edge = {
+						sourceId: source.toString(),
+						targetId: target.toString(),
+						typeName: GraphUtils.GenericLinkTypeName,
+					};
+				} else {
+					throw new Error("Could not turn the given input into an edge definition.");
+				}
+				if (Utils.isStringOrNumber(extra)) {
+					edge.name = extra.toString();
+				} else if (_.isPlainObject(extra)) {
+					_.assign(edge, extra);
+				} else {
+					throw new Error("Don't know how to assign the payload to the edge.");
+				}
+				return edge;
 			default:
 				throw new Error("Could not turn the given input into an edge definition.");
 		}
@@ -118,7 +143,7 @@ class GraphUtils {
 							: {
 									sourceId: source.toString(),
 									targetId: target.toString(),
-									typeName: "GenericLink",
+									typeName: GraphUtils.GenericLinkTypeName,
 							  };
 					}
 				}
@@ -139,13 +164,14 @@ class GraphUtils {
 			}
 		} else if (_.isObject(edgeSpecs) || _.isPlainObject(edgeSpecs)) {
 			if (edgeSpecs.sourceId && edgeSpecs.targetId && Utils.isStringOrNumber(edgeSpecs.sourceId) && Utils.isStringOrNumber(edgeSpecs.targetId)) {
-				return returnArray
-					? [edgeSpecs.sourceId.toString(), edgeSpecs.targetId.toString()]
-					: {
-							sourceId: edgeSpecs.sourceId.toString(),
-							targetId: edgeSpecs.targetId.toString(),
-							typeName: edgeSpecs.typeName || "GenericLink",
-					  };
+				if (returnArray) {
+					return [edgeSpecs.sourceId.toString(), edgeSpecs.targetId.toString()];
+				} else {
+					if (Utils.isUndefined(edgeSpecs.typeName)) {
+						edgeSpecs.typeName = "Link";
+					}
+					return edgeSpecs;
+				}
 			}
 		}
 		if (throwError) {

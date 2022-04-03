@@ -174,7 +174,7 @@ class Entity extends EntityBase {
 		}
 		if (Utils.isEmpty(entityTypeSpec) || _.isString(entityTypeSpec)) {
 			// data can't be checked against the schema
-			e = _.assign(e, json);
+			_.assign(e.values, json);
 			e.entityType = null;
 		} else {
 			const props = entityTypeSpec.valueProperties;

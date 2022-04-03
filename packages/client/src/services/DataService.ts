@@ -47,8 +47,8 @@ export default class DataService {
         return this.$store.state.ambient.project;
     }
 
-    async getSpaceAsGraphJson() {
-        return this.dataManager.getSpaceAsGraphJson();
+    async getSpaceAsGraphJson(projectId) {
+        return this.dataManager.getSpaceAsGraphJson(projectId);
     }
 
     async upsertWidget(widget) {

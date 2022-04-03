@@ -70,6 +70,10 @@ export default class VueBase extends Vue {
 		}
 	}
 
+	/**
+	 * Ensures that there is an active project in the store.
+	 * @returns {Promise<any>}
+	 */
 	async ensureActiveProject() {
 
 		if (Utils.isEmpty(this.project)) {

@@ -165,7 +165,7 @@ class Graph {
 			id: u?.data?.id || Utils.id(),
 			name: u?.name || u?.data?.name,
 			description: u?.description,
-			typeName: u?.type || u?.data?.typeName || "GenericLink",
+			typeName: u?.type || u?.data?.typeName || GraphUtils.GenericLinkTypeName,
 			sourceId: u?.data?.sourceId || Utils.id(),
 			targetId: u?.data?.targetId || Utils.id(),
 		};

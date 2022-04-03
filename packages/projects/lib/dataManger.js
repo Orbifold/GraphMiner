@@ -22,6 +22,7 @@ class DataManger {
 
     /**
      * An instance of EntitySpace to manage the knowledge graph.
+     * @type {EntitySpace}
      */
     entitySpace;
 
@@ -78,6 +79,8 @@ class DataManger {
         if (!exists) {
             return null;
         }
+        const project = await this.getProjectById(projectId)
+        await this.entitySpace.setDatabase(project.name)
         return await this.entitySpace.exportGraphJson();
     }
 

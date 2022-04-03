@@ -31,10 +31,10 @@ describe("Graphs", function () {
 		// expect(() => g.addEdge({sourceId: 12, targetId: n1.id})).toThrow(Error);
 
 		const n2 = g.addNode({ typeName: "Thought" });
-		expect(() => g.addEdge({ typeName: "GenericLink", sourceId: n2.id, targetId: n1.id })).not.toThrow(Error);
+		expect(() => g.addEdge({ typeName: GraphUtils.GenericLinkTypeName, sourceId: n2.id, targetId: n1.id })).not.toThrow(Error);
 		expect(g.edgeCount).toEqual(1);
 		expect(g.edges[0].sourceId).toEqual(n2.id);
-		expect(g.getByTypeName("GenericLink").length).toEqual(1);
+		expect(g.getByTypeName(GraphUtils.GenericLinkTypeName).length).toEqual(1);
 
 		const removals = g.removeNode(n2.id);
 		expect(removals.length).toEqual(1);
@@ -200,26 +200,26 @@ describe("Graphs", function () {
 
 		expect(g.nodeCount).toEqual(2);
 		expect(g.edgeCount).toEqual(1);
-		expect(g.edges[0]["typeName"]).toEqual("GenericLink");
+		expect(g.edges[0]["typeName"]).toEqual(GraphUtils.GenericLinkTypeName);
 		expect(g.nodes[0]["name"]).toEqual("T");
 
 		g = Graph.fromPseudoCypher("(T{id:1})-->(T{id:1})");
 		// now we have a loop
 		expect(g.nodeCount).toEqual(1);
 		expect(g.edgeCount).toEqual(1);
-		expect(g.edges[0]["typeName"]).toEqual("GenericLink");
+		expect(g.edges[0]["typeName"]).toEqual(GraphUtils.GenericLinkTypeName);
 		expect(g.nodes[0]["name"]).toEqual("T");
 
 		g = Graph.fromPseudoCypher("(T1)-->(T2)-->(T3)");
 		expect(g.nodeCount).toEqual(3);
 		expect(g.edgeCount).toEqual(2);
-		expect(g.edges[0]["typeName"]).toEqual("GenericLink");
+		expect(g.edges[0]["typeName"]).toEqual(GraphUtils.GenericLinkTypeName);
 		expect(g.nodes[0]["name"]).toEqual("T1");
 
 		g = Graph.fromPseudoCypher("(T1{id:1})-->(T2)-->(T1{id:1})");
 		expect(g.nodeCount).toEqual(2);
 		expect(g.edgeCount).toEqual(2);
-		expect(g.edges[0]["typeName"]).toEqual("GenericLink");
+		expect(g.edges[0]["typeName"]).toEqual(GraphUtils.GenericLinkTypeName);
 		expect(g.nodes[0]["name"]).toEqual("T1");
 
 		g = Graph.fromPseudoCypher("(p:ProcessTask{duration: 33.2, name:'a'})");

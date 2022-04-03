@@ -227,7 +227,7 @@
 		createInteractions() {}
 
 		async createGraphModel() {
-			const json = await this.$dataService.getSpaceAsGraphJson();
+			const json = await this.$dataService.getSpaceAsGraphJson(this.project.id);
 			const nodeData = json.nodes.map((n) => {
 				return {
 					key: n.id,

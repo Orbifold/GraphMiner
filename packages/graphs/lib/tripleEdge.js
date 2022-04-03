@@ -83,7 +83,7 @@ class TripleEdge {
 		}
 		let typeName = entity.typeName;
 		if (Utils.isEmpty(typeName)) {
-			typeName = "GenericLink";
+			typeName = GraphUtils.GenericLinkTypeName;
 		}
 		let name = entity.name;
 		if (Utils.isEmpty(name)) {
