@@ -1086,7 +1086,9 @@ class Graph {
 	 * @returns {[*]|any[]}
 	 */
 	degreeHistogram(bins = 10) {
-		const data = _.values(this.getDegrees());
+		const dg = this.getDegrees();
+
+		const data = _.values(dg);
 		return Utils.histogram(data, bins);
 	}
 

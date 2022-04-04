@@ -6,6 +6,7 @@ import vuetify from "./plugins/vuetify";
 
 import LocalDataService from "@/services/LocalDataService";
 import AmbientService from "@/services/AmbientService";
+import VueApexCharts from 'vue-apexcharts'
 
 import VueMousetrapPlugin from "vue-mousetrap/vue2";
 import DataService from "@/services/DataService";
@@ -29,6 +30,8 @@ Vue.prototype.$eventHub = new Vue();
 // Plugins
 //==========================================================
 Vue.use(VueMousetrapPlugin);
+Vue.use(VueApexCharts)
+Vue.component('apexchart', VueApexCharts)
 //==========================================================
 // Vue App
 //==========================================================

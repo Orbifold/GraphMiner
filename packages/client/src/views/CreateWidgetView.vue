@@ -8,7 +8,7 @@
 			</v-col>
 			<v-col cols="6">
 				<div>
-					<GChart :settings="{ packages: ['bar'] }" :data="chartData" :options="chartOptions" :createChart="(el, google) => new google.charts.Bar(el)" @ready="onChartReady" />
+					<div :settings="{ packages: ['bar'] }" :data="chartData" :options="chartOptions" :createChart="(el, google) => new google.charts.Bar(el)" @ready="onChartReady" />
 				</div>
 			</v-col>
 			<v-row>
@@ -35,13 +35,12 @@
 	import "prismjs/components/prism-clike";
 	import "prismjs/components/prism-javascript";
 	import "prismjs/themes/prism-tomorrow.css";
-	import { GChart } from "vue-google-charts";
 	import { NotificationType } from "@/shared/notificationType";
 
 	@Component({
 		components: {
 			PrismEditor,
-			GChart,
+
 		},
 	})
 	export default class CreateWidgetView extends Vue {
