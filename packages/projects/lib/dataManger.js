@@ -86,8 +86,8 @@ class DataManger {
 		return this.widgetManager.upsertWidget(widget);
 	}
 
-	async getWidgetById(projectId, id) {
-		return this.widgetManager.getWidgetById(id);
+	async getWidgetTemplateById(id) {
+		return this.widgetManager.getWidgetTemplateById(id);
 	}
 
 	async getProjectById(projectId) {
@@ -107,7 +107,7 @@ class DataManger {
 		const project = await this.getProjectById(projectId);
 		const db = new Dashboard(name);
 		await this.widgetManager.ensureTestWidget();
-		const widget = await this.widgetManager.getWidgetById("test");
+		const widget = await this.widgetManager.getWidgetTemplateById("test");
 		db.widgets.push(widget.clone());
 		project.dashboards.push(db);
 		await this.save(project);
@@ -129,6 +129,10 @@ class DataManger {
 		const project = await this.getProjectById(projectId);
 		await this.entitySpace.setDatabase(project.name);
 		return await this.entitySpace.exportGraph();
+	}
+
+	async getWidgetTemplates() {
+		return await this.widgetManager.getWidgetTemplates();
 	}
 }
 

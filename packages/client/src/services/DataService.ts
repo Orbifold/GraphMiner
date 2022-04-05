@@ -55,8 +55,8 @@ export default class DataService {
 		return this.dataManager.upsertWidget(widget);
 	}
 
-	async getWidgetById(id) {
-		return this.dataManager.getWidgetById(id);
+	async getWidgetTemplateById(id) {
+		return this.dataManager.getWidgetTemplateById(id);
 	}
 
 	async createDashboard(projectId, name) {
@@ -73,5 +73,20 @@ export default class DataService {
 	 */
 	async getGraph(projectId) {
 		return await this.dataManager.getGraph(projectId);
+	}
+
+	async addWidget(projectId, dashboardId, widgetTemplateId) {
+		const widgetTemplate = await this.getWidgetTemplateById(widgetTemplateId);
+		if (widgetTemplate) {
+			const widget = widgetTemplate.clone();
+			const project = await this.getActiveProject();
+			project.addWidget(widget, dashboardId);
+			await this.dataManager.save(project);
+			await this.setActiveProject(projectId);
+		}
+	}
+
+	async getWidgetTemplates() {
+		return await this.dataManager.getWidgetTemplates();
 	}
 }

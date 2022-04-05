@@ -8,19 +8,32 @@
 			</v-col>
 			<v-col cols="6">
 				<div>
-					<div :settings="{ packages: ['bar'] }" :data="chartData" :options="chartOptions" :createChart="(el, google) => new google.charts.Bar(el)" @ready="onChartReady" />
+					<ChartWidget :data="chartData" :options="chartOptions"></ChartWidget>
 				</div>
 			</v-col>
-			<v-row>
-				<v-col>
-					<div class="float-right">
-						<v-btn depressed color="primary" @click="getWidget">Get Widget</v-btn>
-						<v-btn depressed color="success" @click="save">Save</v-btn>
-					</div>
-				</v-col>
-			</v-row>
+		</v-row>
+		<v-row justify="space-between">
+			<v-col>
+				<div>
+					<v-btn depressed color="primary" @click="getWidget">Get Widget</v-btn>
+				</div>
+			</v-col>
+			<v-col>
+				<v-btn depressed color="primary" @click="refresh">Refresh Widget</v-btn>
+			</v-col>
 		</v-row>
 		<v-row class="red--text">{{ output }}</v-row>
+		<v-divider></v-divider>
+
+		<v-row justify="center">
+			<div style="width: 60%; max-width: 500px">
+				<v-form>
+					<v-text-field label="name" v-model="widgetName"></v-text-field>
+					<v-text-field label="description" v-model="widgetDescription"></v-text-field>
+					<v-btn depressed color="success" @click="save">Save</v-btn>
+				</v-form>
+			</div>
+		</v-row>
 	</v-container>
 </template>
 
@@ -28,6 +41,7 @@
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
 	import { Widget } from "@graphminer/projects";
+	import * as _ from "lodash";
 
 	import { PrismEditor } from "vue-prism-editor";
 	import "vue-prism-editor/dist/prismeditor.min.css";
@@ -36,11 +50,12 @@
 	import "prismjs/components/prism-javascript";
 	import "prismjs/themes/prism-tomorrow.css";
 	import { NotificationType } from "@/shared/notificationType";
+	import ChartWidget from "@/components/ChartWidget.vue";
 
 	@Component({
 		components: {
 			PrismEditor,
-
+			ChartWidget,
 		},
 	})
 	export default class CreateWidgetView extends Vue {
@@ -48,13 +63,20 @@
 		showLeft: boolean = true;
 		data: any[][] = [];
 		code: string = `
-		this.data = this.sampleData;
-		this.options = this.sampleOptions;
+		this.data = this.sampleData();
+		this.options = this.sampleOptions();
 		`;
 		chartData: any = [];
-		chartOptions: any = null;
+		chartOptions: any = {
+			chart: {
+				height: 350,
+				type: "bar",
+			},
+		};
 		context: any = null;
 		output: string = null;
+		widgetName: string = null;
+		widgetDescription: string = null;
 		google: any = null;
 
 		toggleRight() {
@@ -66,40 +88,41 @@
 		}
 
 		mounted() {
-			this.refreshLoop();
-		}
-
-		onChartReady(chart, google) {
-			this.google = google;
-		}
-
-		getChartOptions() {
-			if (!this.google || !this.google.charts.Bar) return null;
-			// return this.chartsLib.charts.Bar.convertOptions(this.chartOptions);
-			return this.google.charts.Bar.convertOptions(this.chartOptions);
+			const ar = _.range(30).map((u) => Utils.randomInteger(1, 100));
+			this.context = {
+				sampleData: () => {
+					return [
+						{
+							name: "Sample",
+							data: ar,
+						},
+					];
+				},
+				sampleOptions: () => {
+					return {
+						chart: {
+							height: 350,
+							type: "bar",
+						},
+						xaxis: {
+							type: "numeric",
+						},
+						title: {
+							text: "Degree distribution",
+						},
+						theme: {
+							palette: "palette6", // upto palette10
+						},
+					};
+				},
+			};
+			// this.refreshLoop();
+			this.refresh();
 		}
 
 		async run() {
 			let code = this.code;
-			this.context = {
-				sampleData: [
-					["Year", "Sales", "Expenses", "Profit"],
-					["2014", 1000, 400, 200],
-					["2015", 1170, 460, 250],
-					["2016", 660, 1120, 300],
-					["2017", 1030, 540, 350],
-				],
-				sampleOptions: {
-					chart: {
-						title: "Sample Chart",
-						subtitle: "The subtitle",
-					},
-					bars: "vertical", // Required for Material Bar Charts.
-					hAxis: { format: "decimal" },
-					height: 400,
-					colors: ["#1b9e77", "#d95f02", "#7570b3"],
-				},
-			};
+
 			let output;
 			{
 				let window = null;
@@ -113,6 +136,13 @@
 				}.call(this.context));
 			}
 			this.output = output;
+		}
+
+		refresh() {
+			this.run().then(() => {
+				this.chartData = this.context.data || [];
+				this.chartOptions = this.context.options || {};
+			});
 		}
 
 		async refreshLoop() {
@@ -129,14 +159,20 @@
 		}
 
 		async save() {
-			const widget = new Widget("test", "Just a test.", "Bar", this.code);
-			widget.id = "test";
+			if (Utils.isEmpty(this.widgetName)) {
+				return this.$ambientService.notify("Empty name.", NotificationType.Error);
+			}
+			if (!Utils.isSimpleString(this.widgetName)) {
+				return this.$ambientService.notify("The name is not a simple name.", NotificationType.Warning);
+			}
+			const widget = new Widget(this.widgetName, this.widgetDescription, "Bar", this.code);
+			widget.id = this.widgetName;
 			await this.$dataService.upsertWidget(widget);
 			this.$ambientService.notify("Saved", NotificationType.Message);
 		}
 
 		async getWidget() {
-			const widget = await this.$dataService.getWidgetById("test");
+			const widget = await this.$dataService.getWidgetTemplateById("test");
 			if (widget) {
 				this.code = widget.code;
 			}

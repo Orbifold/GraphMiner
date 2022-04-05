@@ -1,4 +1,5 @@
 const Widget = require("./widget");
+const _ = require("lodash");
 
 const { Utils } = require("@graphminer/utils");
 
@@ -14,7 +15,20 @@ class Dashboard {
 	constructor(name) {
 		this.name = name;
 		this.widgets = [];
-		this.id=Utils.id();
+		this.id = Utils.id();
+	}
+
+	getWidgetById(widgetId) {
+		return _.find(this.widgets, (w) => w.id === widgetId) || null;
+	}
+
+	getWidgetByName(name) {
+		name = name.toString().trim();
+		return _.find(this.widgets, (w) => w.name.toLowerCase() === name) || null;
+	}
+
+	removeWidgetById(widgetId) {
+		_.remove(this.widgets, (w) => w.id === widgetId);
 	}
 
 	toJSON() {
