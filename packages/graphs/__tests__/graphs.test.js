@@ -344,7 +344,7 @@ describe("Graphs", function () {
 	it("should interpret diverse things as an edge specification", function () {
 		const getEdge = (...e) => {
 			const found = GraphUtils.getEdgeFromSpecs(...e);
-			return [found.sourceId, found.targetId];
+			return [found.sourceId.toString(), found.targetId.toString()];
 		};
 		expect(getEdge(1, 2)).toEqual(["1", "2"]);
 		expect(getEdge("1->2")).toEqual(["1", "2"]);

@@ -42,13 +42,7 @@ class WidgetManager {
 	async ensureTestWidget() {
 		const found = await this.getWidgetTemplateById("test");
 		if (Utils.isEmpty(found)) {
-			const code = `
-		this.data = this.sampleData();
-		this.options = this.sampleOptions();
-		`;
-			const w = new Widget("test", "Sample widget for testing purposes.", "Bar", code);
-			w.id = "test";
-			await this.upsertWidget(w);
+			await this.upsertWidget(Widget.testWidget());
 		}
 	}
 }

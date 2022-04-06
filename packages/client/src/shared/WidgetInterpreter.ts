@@ -2,6 +2,7 @@ import { Graph } from "@graphminer/graphs";
 import { Widget } from "@graphminer/projects";
 import * as _ from "lodash";
 import { Utils } from "@graphminer/utils";
+import { Random } from "@graphminer/language";
 
 export default class WidgetInterpreter {
 	private readonly graph: Graph;
@@ -31,7 +32,7 @@ export default class WidgetInterpreter {
 						type: "numeric",
 					},
 					title: {
-						text: "",
+						text: "Test Widget",
 					},
 					theme: {
 						palette: "palette6", // upto palette10
@@ -39,6 +40,7 @@ export default class WidgetInterpreter {
 				};
 			},
 			graph: this.graph,
+			r: Random,
 			data: [],
 			options: {},
 		};
@@ -50,12 +52,20 @@ export default class WidgetInterpreter {
 		global.Utils = Utils;
 		const result = [];
 		for (const widget of widgets) {
-			const err = Utils.eval(widget.code, ctx);
-			result.push({
-				options: ctx.options,
-				data: ctx.data,
-				error: err,
-			});
+			try {
+				const err = Utils.eval(widget.code, ctx);
+				result.push({
+					options: ctx.options,
+					data: ctx.data,
+					error: err,
+				});
+			} catch (e) {
+				result.push({
+					options: null,
+					data: null,
+					error: e.message,
+				});
+			}
 		}
 		return result;
 	}

@@ -32,6 +32,7 @@
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
 	import VueBase from "@/views/vueBase";
+	import { Lang, Random } from "@graphminer/language";
 
 	@Component({})
 	export default class DashboardsView extends VueBase {
@@ -53,7 +54,7 @@
 		}
 
 		async addDashboard() {
-			await this.$dataService.createDashboard(this.project.id,`Dashboard${Utils.randomId()}`);
+			await this.$dataService.createDashboard(this.project.id, `Dashboard ${Utils.titleCase(Random.noun())}`);
 			await this.refresh();
 		}
 

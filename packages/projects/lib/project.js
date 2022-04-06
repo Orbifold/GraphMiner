@@ -10,6 +10,10 @@ class Project {
 	description = null;
 	timestamp;
 	dashboards = [];
+	/**
+	 *
+	 * @type {string|null}
+	 */
 	databaseName = null;
 
 	constructor(name = null, description = null) {
@@ -18,7 +22,7 @@ class Project {
 		this.description = description;
 		this.timestamp = Date.now();
 		this.dashboards = [];
-		this.databaseName = Utils.randomId();
+		this.databaseName = "DB" + Utils.randomId();
 	}
 
 	toJSON() {

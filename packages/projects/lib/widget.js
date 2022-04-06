@@ -10,9 +10,9 @@ class Widget {
 
 	constructor(name, description, code) {
 		this.id = Utils.id();
-		if (!Utils.isSimpleString(name)) {
-			throw new Error("Should be a simple name.");
-		}
+		// if (!Utils.isSimpleString(name)) {
+		// 	throw new Error("Should be a simple name.");
+		// }
 		this.name = name;
 		this.description = description;
 		this.code = code;
@@ -39,6 +39,16 @@ class Widget {
 	clone() {
 		const w = Widget.fromJSON(this.toJSON());
 		w.id = Utils.id();
+		return w;
+	}
+
+	static testWidget() {
+		const code = `
+		this.data = this.sampleData();
+		this.options = this.sampleOptions();
+		`;
+		const w = new Widget("test", "Sample widget", code);
+		w.id = "test";
 		return w;
 	}
 }

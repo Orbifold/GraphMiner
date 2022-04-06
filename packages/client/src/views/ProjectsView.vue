@@ -32,7 +32,8 @@
 <script lang="ts">
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
-  import VueBase from "@/views/vueBase";
+	import { Lang, Random } from "@graphminer/language";
+	import VueBase from "@/views/vueBase";
 
 	@Component({})
 	export default class ProjectsView extends VueBase {
@@ -53,7 +54,7 @@
 		}
 
 		async addNewProject() {
-			await this.$dataService.createProject(`Project${Utils.randomId()}`);
+			await this.$dataService.createProject(`Project ${Utils.titleCase(Random.word())}`);
 			await this.refresh();
 		}
 

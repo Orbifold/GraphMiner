@@ -1,15 +1,15 @@
 <template>
 	<v-container v-if="dashboard">
-		<v-row>
-			<v-col cols="2"
+		<v-row justify="space-between">
+			<v-col
 				><h1>
-					Dashboard <i>{{ dashboard.name }}</i>
+					{{ dashboard.name }}
 				</h1></v-col
 			>
 			<v-col>
-				<v-menu offset-y>
+				<v-menu offset-y style="z-index: 20">
 					<template v-slot:activator="{ on, attrs }">
-						<v-btn color="primary" v-bind="attrs" v-on="on"> Add Widget</v-btn>
+						<v-btn color="primary" v-bind="attrs" v-on="on" depressed class="float-right"> Add Widget</v-btn>
 					</template>
 					<v-list>
 						<v-list-item v-for="(item, index) in widgets" :key="index" @click="addWidget(item)">
@@ -19,9 +19,10 @@
 				</v-menu>
 			</v-col>
 		</v-row>
-		<v-row v-for="(block, i) in items" :key="i">
+		<v-row v-for="(block, i) in items" :key="i" v-if="items.length > 0">
 			<v-col cols="6" v-for="(item, j) in block" :key="j">
-				<ChartWidget :data="item.data" :options="item.options"></ChartWidget>
+				<div v-if="item.error !== null">{{ item.error }}</div>
+				<ChartWidget v-else :data="item.data" :options="item.options"></ChartWidget>
 			</v-col>
 		</v-row>
 	</v-container>

@@ -1,11 +1,14 @@
 <template>
-	<div v-if="data !== null">
-		<apexchart :options="options" :series="data"></apexchart>
+	<div v-if="data && options && options.chart && options.chart.type">
+		<Chart :options="options" :series="data"></Chart>
 	</div>
 </template>
 
 <script lang="ts">
 	import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+	import { identity } from "lodash";
+	import { Utils } from "@graphminer/utils";
+
 	// ===================================================================
 	// See the Apexchart docs
 	// https://apexcharts.com/docs/series/
@@ -17,12 +20,7 @@
 		@Prop() data: any;
 		@Prop() options: any;
 		chartData: any = [];
-		chartOptions: any = {
-			chart: {
-				height: 350,
-				type: "bar",
-			},
-		};
+		chartOptions: any = null;
 
 		mounted() {
 			this.refresh();
@@ -40,12 +38,10 @@
 
 		@Watch("options")
 		onNewOptions() {
-			this.chartOptions = this.options || {
-				chart: {
-					height: 350,
-					type: "bar",
-				},
-			};
+			if (Utils.isEmpty(this.options)) {
+				return;
+			}
+			this.chartOptions = this.options;
 		}
 	}
 </script>

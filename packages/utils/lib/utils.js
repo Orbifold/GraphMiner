@@ -225,9 +225,8 @@ const Utils = {
 	},
 
 	/**
-	 * Turn the given camel-cased string to title-case,
-	 * e.g. 'aBird' becomes 'A Bird'.
-	 * @param str {string} A camel-cased string.
+	 * Turn the given string to title-case. If the given string is camel-cased is will be split * e.g. 'aBird' becomes 'A Bird'.
+	 * @param str {string} A (camel-cased) string.
 	 * @return {string}
 	 */
 	titleCase(str) {
@@ -664,6 +663,25 @@ const Utils = {
 			}.call(thisContext);
 		}
 		return output;
+	},
+	/**
+	 * Replaces the {{placeholder}} patterns in the given string mustache style.
+	 * @param template {string} A string possibly containing mustache-like slots.
+	 * @param  data {*} A plain object with the slot replacements.
+	 *
+	 * @example
+	 *
+	 * Utils.mustache("It is {{num}}:34pm.",{num: 2})
+	 */
+	mustache(template, data) {
+		return faker.helpers.mustache(template, data);
+	},
+	shuffle(ar) {
+		if (!_.isArray(ar)) {
+			throw new Error(strings.ShoudBeType("ar", "Array", "Utils.shuffle"));
+		}
+
+		return faker.helpers.shuffle(ar);
 	},
 };
 module.exports = Utils;

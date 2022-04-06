@@ -14,11 +14,6 @@
 		</v-row>
 		<v-row justify="space-between">
 			<v-col>
-				<div>
-					<v-btn depressed color="primary" @click="getWidget">Get Widget</v-btn>
-				</div>
-			</v-col>
-			<v-col>
 				<v-btn depressed color="primary" @click="refresh">Refresh Widget</v-btn>
 			</v-col>
 		</v-row>
@@ -51,6 +46,8 @@
 	import "prismjs/themes/prism-tomorrow.css";
 	import { NotificationType } from "@/shared/notificationType";
 	import ChartWidget from "@/components/ChartWidget.vue";
+	import WidgetInterpreter from "@/shared/WidgetInterpreter";
+	import { Graph, RandomGraph } from "@graphminer/graphs";
 
 	@Component({
 		components: {
@@ -62,22 +59,16 @@
 		showRight: boolean = true;
 		showLeft: boolean = true;
 		data: any[][] = [];
-		code: string = `
-		this.data = this.sampleData();
-		this.options = this.sampleOptions();
-		`;
+		code: string = null;
 		chartData: any = [];
-		chartOptions: any = {
-			chart: {
-				height: 350,
-				type: "bar",
-			},
-		};
+		chartOptions: any = {};
 		context: any = null;
 		output: string = null;
 		widgetName: string = null;
 		widgetDescription: string = null;
-		google: any = null;
+		graph: Graph;
+		private interpreter: WidgetInterpreter;
+		private widget: Widget;
 
 		toggleRight() {
 			this.showRight = !this.showRight;
@@ -88,69 +79,29 @@
 		}
 
 		mounted() {
-			const ar = _.range(30).map((u) => Utils.randomInteger(1, 100));
-			this.context = {
-				sampleData: () => {
-					return [
-						{
-							name: "Sample",
-							data: ar,
-						},
-					];
-				},
-				sampleOptions: () => {
-					return {
-						chart: {
-							height: 350,
-							type: "bar",
-						},
-						xaxis: {
-							type: "numeric",
-						},
-						title: {
-							text: "Degree distribution",
-						},
-						theme: {
-							palette: "palette6", // upto palette10
-						},
-					};
-				},
-			};
+			this.graph = RandomGraph.BalancedTree();
+			this.interpreter = new WidgetInterpreter(this.graph);
+			this.widget = Widget.testWidget();
+			this.code = this.widget.code;
 			// this.refreshLoop();
 			this.refresh();
 		}
 
-		async run() {
-			let code = this.code;
-
-			let output;
-			{
-				let window = null;
-				let global = null;
-				(function () {
-					try {
-						return eval(code);
-					} catch (e) {
-						output = e;
-					}
-				}.call(this.context));
-			}
-			this.output = output;
-		}
-
 		refresh() {
-			this.run().then(() => {
-				this.chartData = this.context.data || [];
-				this.chartOptions = this.context.options || {};
-			});
+			this.widget.code = this.code;
+			const result = this.interpreter.execute([this.widget]);
+			const r = result[0];
+			if (Utils.isDefined(r.error)) {
+				this.output = r.error;
+			} else {
+				this.chartOptions = r.options;
+				this.chartData = r.data;
+			}
 		}
 
 		async refreshLoop() {
 			setInterval(() => {
-				this.run().then(() => {
-					this.chartData = this.context.data || [];
-					this.chartOptions = this.context.options || {};
-				});
+				this.refresh();
 			}, 1000);
 		}
 
@@ -162,11 +113,11 @@
 			if (Utils.isEmpty(this.widgetName)) {
 				return this.$ambientService.notify("Empty name.", NotificationType.Error);
 			}
-			if (!Utils.isSimpleString(this.widgetName)) {
-				return this.$ambientService.notify("The name is not a simple name.", NotificationType.Warning);
-			}
-			const widget = new Widget(this.widgetName, this.widgetDescription, "Bar", this.code);
-			widget.id = this.widgetName;
+			// if (!Utils.isSimpleString(this.widgetName)) {
+			// 	return this.$ambientService.notify("The name is not a simple name.", NotificationType.Warning);
+			// }
+			const widget = new Widget(this.widgetName, this.widgetDescription, this.code);
+
 			await this.$dataService.upsertWidget(widget);
 			this.$ambientService.notify("Saved", NotificationType.Message);
 		}

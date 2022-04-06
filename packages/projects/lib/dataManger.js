@@ -52,20 +52,19 @@ class DataManger {
 	}
 
 	async createProject(...projectSpecs) {
-		const pr = await this.projectManager.createProject(...projectSpecs);
+		await this.widgetManager.ensureTestWidget();
+
+		const project = await this.projectManager.createProject(...projectSpecs);
 
 		// create the db
-		await this.entitySpace.createDatabase(pr.name);
-
-		// temporarily switch to that db to import data
-		const db = this.entitySpace.database;
-		await this.entitySpace.setDatabase(pr.name);
+		await this.entitySpace.createDatabase(project.databaseName);
+		// switch to the new db
+		await this.entitySpace.setDatabase(project.databaseName);
 
 		const g = RandomGraph.ErdosRenyi(200, 400);
 		await this.entitySpace.importGraph(g);
-		// set back
-		await this.entitySpace.setDatabase(db);
-		return pr;
+
+		return project;
 	}
 
 	async getAllProjects() {
@@ -78,7 +77,7 @@ class DataManger {
 			return null;
 		}
 		const project = await this.getProjectById(projectId);
-		await this.entitySpace.setDatabase(project.name);
+		await this.entitySpace.setDatabase(project.databaseName);
 		return await this.entitySpace.exportGraphJson();
 	}
 
@@ -106,7 +105,6 @@ class DataManger {
 	async createDashboard(projectId, name) {
 		const project = await this.getProjectById(projectId);
 		const db = new Dashboard(name);
-		await this.widgetManager.ensureTestWidget();
 		const widget = await this.widgetManager.getWidgetTemplateById("test");
 		db.widgets.push(widget.clone());
 		project.dashboards.push(db);
@@ -127,7 +125,7 @@ class DataManger {
 	 */
 	async getGraph(projectId) {
 		const project = await this.getProjectById(projectId);
-		await this.entitySpace.setDatabase(project.name);
+		await this.entitySpace.setDatabase(project.databaseName);
 		return await this.entitySpace.exportGraph();
 	}
 

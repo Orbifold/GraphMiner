@@ -1,0 +1,42 @@
+{
+  "name": "@graphminer/language",
+  "version": "0.4.2",
+  "description": "Utilities related to natural language.",
+  "keywords": [
+    "nlp"
+  ],
+  "author": "Swa <swa@orbifold.net>",
+  "homepage": "https://graphminer.io",
+  "license": "GPL-3.0-only",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orbifold/GraphMiner.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/Orbifold/GraphMiner/issues"
+  },
+  "dependencies": {
+    "natural": "^5.1.13",
+    "wordnet-db": "^3.1.14",
+    "@faker-js/faker": "^6.0.0-beta.0",
+    "@graphminer/utils": "^0.4.2"
+  },
+  "devDependencies": {
+    "jest": "^27.4.5"
+  },
+  "type": "commonjs"
+}
