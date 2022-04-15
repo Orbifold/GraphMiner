@@ -13,13 +13,29 @@
         >
           <v-container>
             <v-row>
-              <v-col cols="6">
-                <v-text-field label="Name" :rules="rules" v-model="projectName"></v-text-field>
+              <v-col cols="11">
+                <v-text-field label="Name" :rules="rules" v-model="projectName" @keydown.enter="done()" autofocus></v-text-field>
+              </v-col>
+
+            </v-row>
+            <v-row>
+              <v-col cols="11">
+                <v-textarea label="Description" v-model="projectDescription"></v-textarea>
               </v-col>
             </v-row>
             <v-row>
-              <v-col cols="6">
-                <v-text-field label="Description" v-model="projectDescription"></v-text-field>
+              <v-col cols="8">
+                <v-text-field label="Image URL" v-model="projectImage">
+                  <template v-slot:append>
+                    <v-btn icon small @click="randomImage">
+                      <v-icon>$random</v-icon>
+                    </v-btn>
+                  </template>
+                </v-text-field>
+
+              </v-col>
+              <v-col cols="4">
+                <v-img label="Image" :src="projectImage" height="100" width="100"></v-img>
               </v-col>
             </v-row>
           </v-container>
@@ -38,16 +54,20 @@
 import {Component, Prop, Vue, Watch} from "vue-property-decorator";
 import * as _ from "lodash";
 import {Utils} from "@graphminer/utils";
+import {NotificationType} from "@/shared/notificationType";
 
 @Component({})
 export default class ProjectDialog extends Vue {
   visible: boolean = false;
   projectName: string = null;
   projectDescription: string = null;
+  projectImage: string = null;
   resolve: any = null;
   reject: any = null;
   rules: any[] = [Utils.validationRules.required, Utils.validationRules.notEmpty];
   valid: boolean = true;
+  isNewProject: boolean = true;
+  originalProjectName: string = null;
 
   hide() {
     this.visible = false;
@@ -64,14 +84,24 @@ export default class ProjectDialog extends Vue {
     this.resolve(null);
   }
 
-  done() {
+  async done() {
     (this.$refs.form as any).validate();
     if (this.valid) {
-      this.hide();
-      this.resolve({
-        name: this.projectName,
-        description: this.projectDescription
-      });
+      let names = await this.$dataService.getProjectNames();
+      names = names.map(n => n.toLowerCase());
+      if (!this.isNewProject) {
+        _.remove(names, n => n === this.originalProjectName.toLowerCase());
+      }
+      if (_.includes(names, this.projectName.toLowerCase())) {
+        return this.$ambientService.notify(`A project with name '${this.projectName}' already exists.`, NotificationType.Warning);
+      } else {
+        this.hide();
+        this.resolve({
+          name: this.projectName,
+          description: this.projectDescription,
+          image: this.projectImage
+        });
+      }
     }
   }
 
@@ -79,8 +109,11 @@ export default class ProjectDialog extends Vue {
   }
 
   async newProject() {
+    this.originalProjectName = "";
     this.projectName = "";
     this.projectDescription = "";
+    this.projectImage = "";
+    this.isNewProject = true;
     this.show();
     return new Promise((resolve, reject) => {
       this.resolve = resolve;
@@ -90,12 +123,19 @@ export default class ProjectDialog extends Vue {
 
   async editProject(project) {
     this.projectName = project.name;
+    this.originalProjectName = project.name;
     this.projectDescription = project.description;
+    this.projectImage = project.image;
+    this.isNewProject = false;
     this.show();
     return new Promise((resolve, reject) => {
       this.resolve = resolve;
       this.reject = reject;
     });
+  }
+
+  randomImage() {
+    this.projectImage = Utils.randomImageUrl();
   }
 }
 </script>

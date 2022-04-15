@@ -79,6 +79,10 @@ class DataManger {
         return this.projectManager.getProjects();
     }
 
+    async getProjectNames() {
+        return this.projectManager.getProjectNames();
+    }
+
     async getSpaceAsGraphJson(projectId) {
         const exists = await this.projectManager.projectIdExists(projectId);
         if (!exists) {
@@ -87,6 +91,10 @@ class DataManger {
         const project = await this.getProjectById(projectId);
         await this.entitySpace.setDatabase(project.databaseName);
         return await this.entitySpace.exportGraphJson();
+    }
+
+    async projectNameExists(projectName) {
+        return await this.projectManager.projectNameExists(projectName)
     }
 
     async upsertWidget(widget) {

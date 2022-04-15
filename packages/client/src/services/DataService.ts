@@ -31,12 +31,20 @@ export default class DataService {
         return this.dataManager.getAllProjects();
     }
 
+    async getProjectNames() {
+        return this.dataManager.getProjectNames();
+    }
+
     async getAllDashboards() {
         return this.dataManager.getAllDashboards();
     }
 
     async getProject(projectId) {
         return this.dataManager.getProjectById(projectId);
+    }
+
+    async projectNameExists(projectName) {
+        return this.dataManager.projectNameExists(projectName);
     }
 
     /**

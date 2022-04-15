@@ -11,13 +11,17 @@
     <v-divider class="mt-3 mb-3"></v-divider>
     <v-row v-for="(block, i) in data" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" max-width="400" color="primary3 " flat>
+        <v-card class="mx-auto" min-height="270" max-width="400" max-height="400" color="primary3 " flat>
+          <v-img
+              height="80"
+              :src=" item.image"
+          ></v-img>
           <v-card-title>{{ item.name }}</v-card-title>
           <v-card-subtitle class="pb-0">
             <v-chip class="mt-2 mb-2" color="primary2" text-color="white" x-small>Project</v-chip>
           </v-card-subtitle>
           <v-card-text class="text--primary">
-            <div>{{ item.description }}</div>
+            <div class="text-truncate"><i>{{ item.description }}</i></div>
           </v-card-text>
 
           <v-card-actions>
@@ -88,7 +92,7 @@ export default class ProjectsView extends VueBase {
   async addNewProject() {
     const info = await (this.$refs.projectDialog as any).newProject();
     if (Utils.isDefined(info)) {
-      await this.$dataService.createProject(info.name, info.description);
+      await this.$dataService.createProject(info.name, info.description, info.image);
       await this.refresh();
     }
 
@@ -112,6 +116,7 @@ export default class ProjectsView extends VueBase {
     if (Utils.isDefined(info)) {
       project.name = info.name;
       project.description = info.description;
+      project.image = info.image;
       await this.$dataService.upsertProject(project);
       await this.refresh();
     }
