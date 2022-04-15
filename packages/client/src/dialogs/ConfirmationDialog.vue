@@ -26,7 +26,7 @@ export default class ConfirmationDialog extends Vue {
   message: string = null;
   title: string = null;
 
-  open(title: string, message: string) {
+  show(title: string, message: string) {
     this.isOpen = true;
     this.title = title;
     this.message = message;

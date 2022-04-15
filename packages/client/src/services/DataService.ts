@@ -1,92 +1,107 @@
-import { DataManager } from "@graphminer/projects";
-import { Store } from "vuex";
+import {DataManager} from "@graphminer/projects";
+import {Store} from "vuex";
 
 export default class DataService {
-	/**
-	 *
-	 * @type {DataManager}
-	 */
-	private dataManager: DataManager;
-	isInitialized: boolean = false;
-	private $store: Store<any>;
+    /**
+     *
+     * @type {DataManager}
+     */
+    private dataManager: DataManager;
+    isInitialized: boolean = false;
+    private $store: Store<any>;
 
-	async init($store) {
-		if (this.isInitialized) {
-			return this;
-		}
-		this.dataManager = await DataManager.browser();
-		this.$store = $store;
-		return this;
-	}
+    async init($store) {
+        if (this.isInitialized) {
+            return this;
+        }
+        this.dataManager = await DataManager.browser();
+        this.$store = $store;
+        return this;
+    }
 
-	async createProject(...projectSpecs) {
-		return this.dataManager.createProject(...projectSpecs);
-	}
+    async createProject(...projectSpecs) {
+        return this.dataManager.createProject(...projectSpecs);
+    }
 
-	async getAllProjects() {
-		return this.dataManager.getAllProjects();
-	}
+    async removeProject(projectId) {
+        return this.dataManager.removeProject(projectId);
+    }
 
-	async getAllDashboards() {
-		return this.dataManager.getAllDashboards();
-	}
+    async getAllProjects() {
+        return this.dataManager.getAllProjects();
+    }
 
-	/**
-	 * The one and only place to switch project.
-	 * @param projectId
-	 * @returns {Promise<void>}
-	 */
-	async setActiveProject(projectId) {
-		const project = await this.dataManager.getProjectById(projectId);
-		window["project"] = project;
+    async getAllDashboards() {
+        return this.dataManager.getAllDashboards();
+    }
 
-		this.$store.commit("ambient/setProject", project);
-	}
+    async getProject(projectId) {
+        return this.dataManager.getProjectById(projectId);
+    }
 
-	async getActiveProject() {
-		return this.$store.state.ambient.project;
-	}
+    /**
+     * The one and only place to switch project.
+     * @param projectId
+     * @returns {Promise<void>}
+     */
+    async setActiveProject(projectId) {
+        const project = await this.dataManager.getProjectById(projectId);
+        window["project"] = project;
 
-	async getSpaceAsGraphJson(projectId) {
-		return this.dataManager.getSpaceAsGraphJson(projectId);
-	}
+        this.$store.commit("ambient/setProject", project);
+    }
 
-	async upsertWidget(widget) {
-		return this.dataManager.upsertWidget(widget);
-	}
+    async getActiveProject() {
+        return this.$store.state.ambient.project;
+    }
 
-	async getWidgetTemplateById(id) {
-		return this.dataManager.getWidgetTemplateById(id);
-	}
+    async getSpaceAsGraphJson(projectId) {
+        return this.dataManager.getSpaceAsGraphJson(projectId);
+    }
 
-	async createDashboard(projectId, name) {
-		const db = await this.dataManager.createDashboard(projectId, name);
-		// update the store
-		await this.setActiveProject(projectId);
-		return db;
-	}
+    async upsertWidget(widget) {
+        return this.dataManager.upsertWidget(widget);
+    }
 
-	/**
-	 *
-	 * @param projectId
-	 * @returns {Promise<Graph>}
-	 */
-	async getGraph(projectId) {
-		return await this.dataManager.getGraph(projectId);
-	}
+    async upsertProject(project) {
+        if (this.$store.state.ambient.project?.id === project.id) {
+            this.$store.commit("ambient/setProject", project);
+        }
+        return this.dataManager.upsertProject(project);
+    }
 
-	async addWidget(projectId, dashboardId, widgetTemplateId) {
-		const widgetTemplate = await this.getWidgetTemplateById(widgetTemplateId);
-		if (widgetTemplate) {
-			const widget = widgetTemplate.clone();
-			const project = await this.getActiveProject();
-			project.addWidget(widget, dashboardId);
-			await this.dataManager.save(project);
-			await this.setActiveProject(projectId);
-		}
-	}
+    async getWidgetTemplateById(id) {
+        return this.dataManager.getWidgetTemplateById(id);
+    }
 
-	async getWidgetTemplates() {
-		return await this.dataManager.getWidgetTemplates();
-	}
+    async createDashboard(projectId, name) {
+        const db = await this.dataManager.createDashboard(projectId, name);
+        // update the store
+        await this.setActiveProject(projectId);
+        return db;
+    }
+
+    /**
+     *
+     * @param projectId
+     * @returns {Promise<Graph>}
+     */
+    async getGraph(projectId) {
+        return await this.dataManager.getGraph(projectId);
+    }
+
+    async addWidget(projectId, dashboardId, widgetTemplateId) {
+        const widgetTemplate = await this.getWidgetTemplateById(widgetTemplateId);
+        if (widgetTemplate) {
+            const widget = widgetTemplate.clone();
+            const project = await this.getActiveProject();
+            project.addWidget(widget, dashboardId);
+            await this.dataManager.save(project);
+            await this.setActiveProject(projectId);
+        }
+    }
+
+    async getWidgetTemplates() {
+        return await this.dataManager.getWidgetTemplates();
+    }
 }
