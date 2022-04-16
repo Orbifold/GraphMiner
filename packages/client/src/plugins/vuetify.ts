@@ -4,7 +4,7 @@ import Vuetify from "vuetify/lib/framework";
 
 Vue.use(Vuetify);
 
-export default new Vuetify({
+const vuetify = new Vuetify({
     theme: {
         dark: false,
         themes: {
@@ -115,6 +115,7 @@ export default new Vuetify({
             map: "mdi mdi-map-outline",
             marker: "mdi mdi-map-marker",
             menu: "mdi mdi-menu",
+            themeToggle: "mdi mdi-theme-light-dark",
             azure: "mdi mdi-microsoft-azure",
             excel: "mdi mdi-file-excel-outline",
             word: "mdi mdi-file-word-outline",
@@ -152,3 +153,4 @@ export default new Vuetify({
         }
     }
 });
+export default vuetify;

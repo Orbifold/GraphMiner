@@ -15,6 +15,9 @@
       <v-btn icon @click="rightDrawer = !rightDrawer">
         <v-icon>mdi-cogs</v-icon>
       </v-btn>
+      <v-btn icon @click="toggleTheme">
+        <v-icon>$themeToggle</v-icon>
+      </v-btn>
     </v-app-bar>
     <v-navigation-drawer v-model="leftDrawer" fixed left temporary></v-navigation-drawer>
     <v-navigation-drawer v-model="rightDrawer" fixed right temporary></v-navigation-drawer>
@@ -29,7 +32,7 @@
     </v-main>
     <v-footer>
       <a href="https://orbifold.net" target="_blank" title="Think. Visualize. Understand.">&copy2022 Orbifold Consulting</a>
-     
+
       <v-spacer></v-spacer>
       <a href="https://github.com/Orbifold/GraphMiner" target="_blank">v{{ version }}</a>
       <v-spacer></v-spacer>
@@ -82,6 +85,10 @@ export default class App extends Vue {
 
   goHome() {
     this.$ambientService.navigateTo({name: "Home"});
+  }
+
+  toggleTheme() {
+    this.$ambientService.toggleTheme();
   }
 }
 </script>

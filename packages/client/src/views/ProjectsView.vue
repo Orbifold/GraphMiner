@@ -11,7 +11,7 @@
     <v-divider class="mt-3 mb-3"></v-divider>
     <v-row v-for="(block, i) in data" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" min-height="270" max-width="400" max-height="400" color="primary3 " flat>
+        <v-card class="mx-auto" min-height="270" max-width="400" max-height="400" flat elevation="1">
           <v-img
               height="80"
               :src=" item.image"
@@ -28,10 +28,10 @@
             <v-btn color="primary6" text @click="openProject(item.id)" title="Open this project to see more"> Open</v-btn>
             <v-btn color="secondary" text @click="exploreProject(item.id)" title="Explore the graph"> Explore</v-btn>
             <v-spacer></v-spacer>
-            <v-btn color="error" x-small fab depressed @click="deleteProject(item.id)" title="Delete this project">
+            <v-btn color="error" x-small icon depressed @click="deleteProject(item.id)" title="Delete this project">
               <v-icon>$bin</v-icon>
             </v-btn>
-            <v-btn color="white" x-small fab depressed @click="editProject(item.id)" title="Edit this project">
+            <v-btn x-small icon depressed @click="editProject(item.id)" title="Edit this project">
               <v-icon>$pen</v-icon>
             </v-btn>
           </v-card-actions>

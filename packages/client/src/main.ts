@@ -25,6 +25,7 @@ Vue.prototype.$dataService = ds;
 Vue.prototype.$ambientService = new AmbientService(store, router);
 Vue.prototype.$localDataService = localDataService;
 Vue.prototype.$eventHub = new Vue();
+Vue.prototype.$vuetify = vuetify;
 
 //==========================================================
 // Plugins
@@ -36,8 +37,8 @@ Vue.component("Chart", VueApexCharts);
 // Vue App
 //==========================================================
 new Vue({
-	router,
-	store,
-	vuetify,
-	render: (h) => h(App),
+    router,
+    store,
+    vuetify,
+    render: (h) => h(App)
 }).$mount("#app");
