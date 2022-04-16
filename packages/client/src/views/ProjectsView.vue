@@ -11,12 +11,15 @@
     <v-divider class="mt-3 mb-3"></v-divider>
     <v-row v-for="(block, i) in data" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" min-height="270" max-width="400" max-height="400" flat elevation="1">
-          <v-img
+        <v-card class="mx-auto" min-height="240" max-width="400" max-height="400" flat elevation="1">
+          <v-img @click="openProject(item.id)" style="cursor: pointer" title="Open this project"
               height="80"
               :src=" item.image"
           ></v-img>
-          <v-card-title>{{ item.name }}</v-card-title>
+          <v-card-title>
+            <v-icon color="primary8" class="mr-2">$flask</v-icon>
+            {{ item.name }}
+          </v-card-title>
           <v-card-subtitle class="pb-0">
             <v-chip class="mt-2 mb-2" color="primary2" text-color="white" x-small>Project</v-chip>
           </v-card-subtitle>

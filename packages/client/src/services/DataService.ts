@@ -1,5 +1,7 @@
-import {DataManager} from "@graphminer/projects";
+import {DataManager, AppSettings} from "@graphminer/projects";
 import {Store} from "vuex";
+import {Utils} from "@graphminer/utils";
+import vuetify from "@/plugins/vuetify";
 
 export default class DataService {
     /**
@@ -16,6 +18,13 @@ export default class DataService {
         }
         this.dataManager = await DataManager.browser();
         this.$store = $store;
+        let settings = await this.dataManager.getAppSettings();
+        if (Utils.isEmpty(settings)) {
+            settings = new AppSettings();
+            await this.dataManager.saveAppSettings(settings);
+        }
+        this.$store.commit("ambient/setAppSettings", settings);
+        vuetify.framework.theme.dark = settings.theme === "dark";
         return this;
     }
 
@@ -111,5 +120,14 @@ export default class DataService {
 
     async getWidgetTemplates() {
         return await this.dataManager.getWidgetTemplates();
+    }
+
+    getAppSettings() {
+        return this.$store.state.ambient.appSettings;
+    }
+
+    async saveAppSettings(appSettings) {
+        this.$store.commit("ambient/setAppSettings", appSettings);
+        await this.dataManager.saveAppSettings(appSettings);
     }
 }

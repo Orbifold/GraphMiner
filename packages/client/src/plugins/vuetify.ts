@@ -30,6 +30,8 @@ const vuetify = new Vuetify({
     icons: {
         iconfont: "mdi",
         values: {
+            brush: "mdi mdi-brush",
+            grid: "mdi mdi-grid",
             gears: "mdi mdi-cogs",
             search: "mdi mdi-magnify",
             close: "mdi mdi-close",
@@ -143,6 +145,7 @@ const vuetify = new Vuetify({
             tag: "mdi mdi-tag-outline",
             thumbs: "mdi mdi-thumb-up-outline",
             twitter: "mdi mdi-twitter",
+            widget: "mdi mdi-widgets",
             tune: "mdi mdi-tune-vertical",
             undo: "mdi mdi-undo",
             redo: "mdi mdi-redo",

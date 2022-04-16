@@ -48,6 +48,7 @@ import AboutDialog from "@/dialogs/AboutDialog.vue";
 import MainMenu from "@/components/MainMenu.vue";
 import NotificationDialog from "@/dialogs/NotificationDialog.vue";
 import {NotificationType} from "@/shared/notificationType";
+import vuetify from "@/plugins/vuetify";
 
 @Component({
   components: {AboutDialog, MainMenu, ConfirmationDialog, NotificationDialog}
@@ -60,7 +61,9 @@ export default class App extends Vue {
 
   beforeMount() {
     this.version = this.$ambientService.graphMinerVersion;
+
   }
+
 
   mounted() {
     this.$ambientService.confirm = this.confirm;
@@ -70,6 +73,7 @@ export default class App extends Vue {
       this.isInitialized = true;
     });
   }
+
 
   async confirm(title: string, message: string) {
     return (this.$refs.confirmationDialog as any).show(title, message);
@@ -88,7 +92,10 @@ export default class App extends Vue {
   }
 
   toggleTheme() {
-    this.$ambientService.toggleTheme();
+    vuetify.framework.theme.dark = !vuetify.framework.theme.dark;
+    const appSettings = this.$dataService.getAppSettings();
+    appSettings.theme = vuetify.framework.theme.dark ? "dark" : "light";
+    this.$dataService.saveAppSettings(appSettings);
   }
 }
 </script>

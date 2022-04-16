@@ -6,6 +6,7 @@ const Project = require("./project");
 const ProjectManager = require("./projectManager");
 const WidgetManager = require("./widgetManager");
 const Dashboard = require("./dashboard");
+const SettingsManager = require("./settingsManager");
 
 /*
  * Manages all data of GraphMiner client by extending the EntitySpace with
@@ -27,6 +28,7 @@ class DataManger {
     entitySpace;
 
     widgetManager;
+    settingsManager;
 
     static async browser() {
         const space = await EntitySpace.browser();
@@ -34,7 +36,8 @@ class DataManger {
         // matters to use the same storage, seems LokiJS does not like multiple instances
         const pm = new ProjectManager(storage);
         const wm = new WidgetManager(storage);
-        return new DataManger(pm, space, wm);
+        const sm = new SettingsManager(storage);
+        return new DataManger(pm, space, wm, sm);
     }
 
     static async inMemory() {
@@ -45,10 +48,11 @@ class DataManger {
         return new DataManger(pm, space);
     }
 
-    constructor(projectManager, entitySpace, widgetManager) {
+    constructor(projectManager, entitySpace, widgetManager, settingsManager) {
         this.projectManager = projectManager;
         this.entitySpace = entitySpace;
         this.widgetManager = widgetManager;
+        this.settingsManager = settingsManager;
     }
 
     async createProject(...projectSpecs) {
@@ -152,6 +156,14 @@ class DataManger {
 
     async getWidgetTemplates() {
         return await this.widgetManager.getWidgetTemplates();
+    }
+
+    async saveAppSettings(appSettings) {
+        return await this.settingsManager.saveAppSettings(appSettings)
+    }
+
+    async getAppSettings() {
+        return await this.settingsManager.getAppSettings()
     }
 }
 

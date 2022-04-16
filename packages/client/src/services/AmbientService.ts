@@ -3,7 +3,6 @@ import Logger from "@/services/LoggerService";
 import * as _ from "lodash";
 import {VueRouter} from "vue-router/types/router";
 import {NotificationType} from "@/shared/notificationType";
-import vuetify from "@/plugins/vuetify";
 
 /*
  * Mostly services delivered by the App.vue frame.
@@ -158,10 +157,6 @@ export default class AmbientService {
         this.$router.push(this.resolveRoute(route));
     }
 
-    toggleTheme() {
-        vuetify.framework.theme.dark = !vuetify.framework.theme.dark;
-
-    }
 
     resolveRoute(route: any) {
         if (_.isString(route)) {
