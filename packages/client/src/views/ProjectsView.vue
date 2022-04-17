@@ -11,7 +11,7 @@
     <v-divider class="mt-3 mb-3"></v-divider>
     <v-row v-for="(block, i) in data" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" min-height="240" max-width="400" max-height="400" flat elevation="1">
+        <v-card class="mx-auto" min-height="240" max-width="400" max-height="400" min-width="230" flat elevation="1">
           <v-img @click="openProject(item.id)" style="cursor: pointer" title="Open this project"
               height="80"
               :src=" item.image"

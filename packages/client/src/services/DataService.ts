@@ -91,8 +91,8 @@ export default class DataService {
         return this.dataManager.getWidgetTemplateById(id);
     }
 
-    async createDashboard(projectId, name) {
-        const db = await this.dataManager.createDashboard(projectId, name);
+    async createDashboard(projectId, name, description,color) {
+        const db = await this.dataManager.createDashboard(projectId, name, description,color);
         // update the store
         await this.setActiveProject(projectId);
         return db;

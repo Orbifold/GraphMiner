@@ -46,12 +46,15 @@
           </v-btn>
         </v-toolbar>
         <splitpanes horizontal @resized="rowResized">
-          <pane :size="showTop ? sizeTop : 0" max-size="30" min-size="0">Top</pane>
+          <pane :size="showTop ? sizeTop : 0" max-size="30" min-size="0" style="background-color: aqua">Top</pane>
           <pane :size="mainSize">
             <v-btn class="ma-1" color="success" depressed @click="refresh">Refresh</v-btn>
             <v-data-table :headers="headers" :items="data" :items-per-page="5" class="elevation-0"></v-data-table>
           </pane>
-          <pane :size="showBottom ? sizeBottom : 0" max-size="30" min-size="0">Bottom</pane>
+          <pane :size="showBottom ? sizeBottom : 0" max-size="30" min-size="0" style="background-color: aqua">
+            <p>Sliding panels are such a wonderful thing.</p>
+
+          </pane>
         </splitpanes>
       </pane>
       <pane :size="showRight ? sizeRight : 0" max-size="30" min-size="0">

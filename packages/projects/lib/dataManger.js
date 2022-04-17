@@ -122,9 +122,9 @@ class DataManger {
         return project.dashboards; //strongly typed
     }
 
-    async createDashboard(projectId, name) {
+    async createDashboard(projectId, name, description, color) {
         const project = await this.getProjectById(projectId);
-        const db = new Dashboard(name);
+        const db = new Dashboard(name, description, color);
         const widget = await this.widgetManager.getWidgetTemplateById("test");
         db.widgets.push(widget.clone());
         project.dashboards.push(db);

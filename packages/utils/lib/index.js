@@ -6,6 +6,7 @@ const Predecessors = require("./predecessors");
 const Predecessor = require("./predecessor");
 const Strings = require("./strings");
 const Time = require("./time");
+const Colors = require("./colors");
 
 module.exports = {
     Utils,
@@ -15,6 +16,7 @@ module.exports = {
     Predecessors,
     Predecessor,
     Strings,
-    Time
+    Time,
+    Colors
 }
 
