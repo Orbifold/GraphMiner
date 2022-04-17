@@ -100,10 +100,40 @@ export default class App extends Vue {
 }
 </script>
 
-<style scoped>
+<style>
 footer a {
   text-decoration: none;
   color: #696969;
   font-size: small;
+}
+
+.truncated-text {
+  height: 200px;
+  width: 90%;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.2em;
+  max-height: 6em;
+  text-align: justify;
+  margin-right: -1em;
+  padding-right: 1em;
+
+  margin-bottom: 15px;
+  font-size: small;
+}
+.truncated-text:before {
+  content: '...';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+.truncated-text:after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 1em;
+  height: 1em;
+  margin-top: 0.2em;
+
 }
 </style>

@@ -11,7 +11,7 @@
     <v-divider class="mt-3 mb-3"></v-divider>
     <v-row v-for="(block, i) in data" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" min-height="240" max-width="400" max-height="400" min-width="230" flat elevation="1">
+        <v-card class="mx-auto"  height="250"   width="280" flat outlined>
           <v-img @click="openProject(item.id)" style="cursor: pointer" title="Open this project"
               height="80"
               :src=" item.image"
@@ -24,10 +24,10 @@
             <v-chip class="mt-2 mb-2" color="primary2" text-color="white" x-small>Project</v-chip>
           </v-card-subtitle>
           <v-card-text class="text--primary">
-            <div class="text-truncate"><i>{{ item.description }}</i></div>
+            <div class="text-truncate"><i>{{ item.description || "&nbsp;" }}</i></div>
           </v-card-text>
 
-          <v-card-actions>
+          <v-card-actions >
             <v-btn color="primary6" text @click="openProject(item.id)" title="Open this project to see more"> Open</v-btn>
             <v-btn color="secondary" text @click="exploreProject(item.id)" title="Explore the graph"> Explore</v-btn>
             <v-spacer></v-spacer>

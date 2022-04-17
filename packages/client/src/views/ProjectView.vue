@@ -1,22 +1,30 @@
 <template>
   <v-container v-if="project !== null">
     <DashboardDialog ref="dashboardDialog"></DashboardDialog>
-    <v-row>
-      <v-col cols="5"
+    <v-row >
+      <v-col v-if="project.image" cols="2" >
+        <v-img :src="project.image" height="120" max-width="200"></v-img>
+      </v-col>
+      <v-col cols="8"
       >
         <h1>
           <v-icon color="primary8">$flask</v-icon>
           {{ project.name }}
         </h1>
+        <div  class="truncated-text">{{ project.description }}</div>
+
       </v-col
       >
-      <v-col>
+      <v-col >
         <v-btn @click="addNewDashboard" depressed color="success" class="float-right">New Dashboard</v-btn>
       </v-col>
     </v-row>
+
+    <v-divider class="mt-2 mb-2"></v-divider>
+
     <v-row v-for="(block, i) in dashboards" :key="i">
       <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" max-width="400" min-width="230">
+        <v-card class="mx-auto" min-height="180" max-width="400" max-height="400" min-width="230" flat outlined>
           <div :style="{height: '10px','background-color':item.color}"></div>
           <v-card-title>
             <v-icon>$dashboard</v-icon>
@@ -26,7 +34,7 @@
             <v-chip class="mt-2 mb-2" color="green darken" text-color="white" x-small>Dashboard</v-chip>
           </v-card-subtitle>
           <v-card-text class="text--primary">
-            <div>{{ item.description }}</div>
+            <div class="text-truncate"><i>{{ item.description }}</i></div>
           </v-card-text>
 
           <v-card-actions>
@@ -96,16 +104,17 @@ export default class ProjectView extends VueBase {
     }
 
   }
+
   async editDashboard(dashboardId) {
 
-    const dashboard = this.project.getDashboardById(dashboardId)
+    const dashboard = this.project.getDashboardById(dashboardId);
     const info = await (this.$refs.dashboardDialog as any).editDashboard(dashboard);
     if (Utils.isDefined(info)) {
       dashboard.name = info.name;
       dashboard.description = info.description;
       dashboard.color = info.color;
-      this.project.removeDashboard(dashboardId)
-      this.project.dashboards.push(dashboard)
+      this.project.removeDashboard(dashboardId);
+      this.project.dashboards.push(dashboard);
       await this.$dataService.upsertProject(this.project);
       await this.refreshDashboards();
     }
@@ -114,7 +123,7 @@ export default class ProjectView extends VueBase {
   async deleteDashboard(dashboardId) {
     const yn = await this.$ambientService.confirm("Delete Dashboard", "Are you sure?");
     if (yn) {
-      this.project.removeDashboard(dashboardId)
+      this.project.removeDashboard(dashboardId);
       await this.$dataService.upsertProject(this.project);
       await this.refreshDashboards();
     }
