@@ -1,30 +1,50 @@
 <template>
   <v-container v-if="project !== null">
+    <ProjectDialog ref="projectDialog"></ProjectDialog>
     <DashboardDialog ref="dashboardDialog"></DashboardDialog>
-    <v-row >
-      <v-col v-if="project.image" cols="2" >
-        <v-img :src="project.image" height="120" max-width="200"></v-img>
+    <v-row>
+      <v-col v-if="project.image" cols="2">
+        <v-hover>
+          <template v-slot:default="{ hover }">
+            <v-img :src="project.image" height="120" max-width="200">
+              <v-overlay
+                  v-if="hover"
+                  absolute
+                  color="#036358"
+              >
+                <v-btn icon x-small @click="editProject">
+                  <v-icon>$pen</v-icon>
+                </v-btn>
+              </v-overlay>
+            </v-img>
+          </template>
+        </v-hover>
       </v-col>
-      <v-col cols="8"
+      <v-col cols="7"
       >
         <h1>
           <v-icon color="primary8">$flask</v-icon>
           {{ project.name }}
+          <v-btn color="error" x-small icon depressed @click="deleteProject" title="Delete this project">
+            <v-icon>$bin</v-icon>
+          </v-btn>
+          <v-btn x-small icon depressed @click="editProject" title="Edit this project">
+            <v-icon>$pen</v-icon>
+          </v-btn>
         </h1>
-        <div  class="truncated-text">{{ project.description }}</div>
+        <div class="truncated-text">{{ project.description }}</div>
 
       </v-col
       >
-      <v-col >
+      <v-col>
         <v-btn @click="addNewDashboard" depressed color="success" class="float-right">New Dashboard</v-btn>
       </v-col>
     </v-row>
 
     <v-divider class="mt-2 mb-2"></v-divider>
 
-    <v-row v-for="(block, i) in dashboards" :key="i">
-      <v-col cols="3" md="3" v-for="(item, j) in block" :key="j">
-        <v-card class="mx-auto" min-height="180" max-width="400" max-height="400" min-width="230" flat outlined>
+    <v-row >
+        <v-card v-for="(item, i) in dashboards" :key="i" class="mx-2 my-2" height="180" width="280"  flat outlined>
           <div :style="{height: '10px','background-color':item.color}"></div>
           <v-card-title>
             <v-icon>$dashboard</v-icon>
@@ -34,11 +54,11 @@
             <v-chip class="mt-2 mb-2" color="green darken" text-color="white" x-small>Dashboard</v-chip>
           </v-card-subtitle>
           <v-card-text class="text--primary">
-            <div class="text-truncate"><i>{{ item.description }}</i></div>
+            <div class="text-truncate"><i>{{ item.description || "&nbsp;" }}</i></div>
           </v-card-text>
 
           <v-card-actions>
-            <v-btn color="primary2" text @click="openDashboard(item.id)"> Open</v-btn>
+            <v-btn color="primary6" text @click="openDashboard(item.id)"> Open</v-btn>
             <v-spacer></v-spacer>
             <v-btn color="error" x-small icon depressed @click="deleteDashboard(item.id)" title="Delete this project">
               <v-icon>$bin</v-icon>
@@ -48,7 +68,6 @@
             </v-btn>
           </v-card-actions>
         </v-card>
-      </v-col>
     </v-row>
   </v-container>
 </template>
@@ -61,9 +80,10 @@ import VueBase from "@/views/vueBase";
 import * as _ from "lodash";
 import {Lang, Random} from "@graphminer/language";
 import DashboardDialog from "@/dialogs/DashboardDialog.vue";
+import ProjectDialog from "@/dialogs/ProjectDialog.vue";
 
 @Component({
-  components: {DashboardDialog}
+  components: {DashboardDialog, ProjectDialog}
 })
 export default class ProjectView extends VueBase {
   dashboards: Dashboard[][] = [];
@@ -76,20 +96,20 @@ export default class ProjectView extends VueBase {
   async refreshDashboards() {
     // make sure you don't alter the data in the store and take a clone
     const all = _.clone(this.project.dashboards);
-    const blocks = [];
-    let currentBlock = [];
-    while (all.length > 0) {
-      if (currentBlock.length >= 4) {
-        blocks.push(currentBlock);
-        currentBlock = [];
-      }
-      const item = all.shift();
-      currentBlock.push(item);
-    }
-    if (currentBlock.length > 0) {
-      blocks.push(currentBlock);
-    }
-    this.dashboards = blocks;
+    // const blocks = [];
+    // let currentBlock = [];
+    // while (all.length > 0) {
+    //   if (currentBlock.length >= 4) {
+    //     blocks.push(currentBlock);
+    //     currentBlock = [];
+    //   }
+    //   const item = all.shift();
+    //   currentBlock.push(item);
+    // }
+    // if (currentBlock.length > 0) {
+    //   blocks.push(currentBlock);
+    // }
+    this.dashboards = all;
   }
 
   async openDashboard(id) {
@@ -126,6 +146,27 @@ export default class ProjectView extends VueBase {
       this.project.removeDashboard(dashboardId);
       await this.$dataService.upsertProject(this.project);
       await this.refreshDashboards();
+    }
+  }
+
+  async editProject() {
+    const project = await this.$dataService.getProject(this.project.id);
+    const info = await (this.$refs.projectDialog as any).editProject(project);
+    if (Utils.isDefined(info)) {
+      project.name = info.name;
+      project.description = info.description;
+      project.image = info.image;
+      this.$store.commit("ambient/setProject", project);
+      await this.$dataService.upsertProject(project);
+
+    }
+  }
+  async deleteProject(){
+    const yn = await this.$ambientService.confirm("Delete Project", "Are you sure?");
+    if (yn) {
+      await this.$dataService.removeProject(this.project.id);
+     this.$store.commit("ambient/setProject",null)
+      this.navigateTo("Projects")
     }
   }
 }

@@ -6,18 +6,56 @@ const _ = require("lodash");
  * Defines a GraphMiner project.
  * */
 class Project {
-    name;
-    description = null;
-    timestamp;
-    dashboards = [];
+
     /**
-     *
+     * The unique id of this project.
+     * @type string
+     */
+    id;
+
+    /**
+     * The name of this project.
+     * @type string
+     */
+    name;
+
+    /**
+     * A description of the project.
+     * @type {string}
+     */
+    description = null;
+
+    /**
+     * When this project was created.
+     * @type  number
+     */
+    timestamp;
+
+    /**
+     * The dashboard collection in this project.
+     * @type {Dashboard[]}
+     */
+    dashboards = [];
+
+    /**
+     * The name of the database corresponds to the collection used in the storage.
      * @type {string|null}
      */
     databaseName = null;
+
+    /**
+     * The image URL used in the UI to brighten things up.
+     * @type {string|null}
+     */
     image = null;
 
-    constructor(name = null, description = null, image = null) {
+    /**
+     * Whether the entity space enforces an underlying schema.
+     * @type {boolean}
+     */
+    hasSchema = false;
+
+    constructor(name = null, description = null, image = null, hasSchema = false) {
         this.id = Utils.id();
         this.name = name;
         this.description = description;
@@ -25,6 +63,7 @@ class Project {
         this.dashboards = [];
         this.databaseName = "DB" + Utils.randomId();
         this.image = image || "/connected.png"
+        this.hasSchema = hasSchema;
     }
 
     toJSON() {
@@ -35,7 +74,8 @@ class Project {
             timestamp: this.timestamp,
             dashboards: this.dashboards.map((d) => d.toJSON()),
             databaseName: this.databaseName,
-            image: this.image
+            image: this.image,
+            hasSchema: this.hasSchema
         };
     }
 
@@ -43,6 +83,7 @@ class Project {
         const p = new Project(json.name, json.description);
         p.timestamp = json.timestamp;
         p.image = json.image;
+        p.hasSchema = json.hasSchema;
         if (Utils.isDefined(json.id)) {
             p.id = json.id;
         }
