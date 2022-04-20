@@ -1,5 +1,5 @@
 import { Graph } from "@graphminer/graphs";
-import { Widget } from "@graphminer/projects";
+import { WidgetTemplate } from "@graphminer/projects";
 import * as _ from "lodash";
 import { Utils } from "@graphminer/utils";
 import { Random } from "@graphminer/language";

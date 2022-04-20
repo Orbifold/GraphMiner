@@ -12,8 +12,8 @@ module.exports = function (wallaby) {
 			{ pattern: "packages/graphs/__tests__/*.test.js", ignore: true },
 			{ pattern: "packages/store/__tests__/*.test.js", ignore: true },
 			{ pattern: "packages/utils/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/projects/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/language/__tests__/*.test.js", ignore: false },
+			{ pattern: "packages/projects/__tests__/*.test.js", ignore: false },
+			{ pattern: "packages/language/__tests__/*.test.js", ignore: true },
 		],
 	};
 };

@@ -1,13 +1,14 @@
 const ProjectUtils = require("../lib/projectUtils");
 const Project = require("../lib/project");
-const LocalProjectManager = require("../lib/projectManager");
+const ProjectManager = require("../lib/projectManager");
 const { Utils } = require("@graphminer/utils");
-const { Widget } = require("../lib");
+const WidgetTemplate = require("../lib/widgetTemplate");
 const Dashboard = require("../lib/dashboard");
+const Widget = require("../lib/widget");
 
 describe("ProjectManager", () => {
 	it("should crud a project", async function () {
-		const man = await LocalProjectManager.inMemory();
+		const man = await ProjectManager.inMemory();
 		let projectName = Utils.randomId();
 		let p = await man.createProject(projectName);
 
@@ -39,7 +40,7 @@ describe("ProjectManager", () => {
 		await man.addDashboard(db, p.id);
 		found = await man.getDashboardById(p.id, db.id);
 		expect(found.name).toEqual(db.name);
-		let w = new Widget("wa", "wb", "wc");
+		let w = new WidgetTemplate("wa", "wb", "wc");
 		await man.addWidget(w, p.id, db.id);
 		found = await man.getWidgetById(w.id, p.id, db.id);
 		expect(found.code).toEqual(w.code);
@@ -55,11 +56,59 @@ describe("ProjectManager", () => {
 		json = p.toJSON();
 		expect(json.dashboards.length).toEqual(1);
 		expect(json.dashboards[0].name).toEqual("d");
-		const w = new Widget("g", "h", "m");
+		const w = new WidgetTemplate("g", "h", "m");
 		p.addWidget(w, db.id);
 
 		p.removeDashboard(db.id);
 		json = p.toJSON();
 		expect(json.dashboards.length).toEqual(0);
+	});
+	it("should get a project in various ways", async function () {
+		const man = await ProjectManager.inMemory();
+		let projectName = Utils.randomId();
+		let p = await man.createProject(projectName);
+		let found = await man.getProjectByName(projectName);
+		expect(found).not.toBeNull();
+		expect(found.id).toEqual(p.id);
+
+		found = await man.getProjectByDatabaseName(p.databaseName);
+		expect(found).not.toBeNull();
+		expect(found.id).toEqual(p.id);
+	});
+
+	it("should crud a widget", async function () {
+		const man = await ProjectManager.inMemory();
+		let projectName = Utils.randomId();
+		let p = await man.createProject(projectName);
+
+		let testWidget = WidgetTemplate.testWidget();
+
+		expect(testWidget.typeName).toEqual("WidgetTemplate");
+		let w = Widget.fromWidgetTemplate(testWidget);
+		expect(w.id).not.toEqual("test");
+		let hasThrown = false;
+		try {
+			// missing dashboard
+			await man.addWidget(w, p.id, "a");
+		} catch (e) {
+			hasThrown = true;
+		}
+		expect(hasThrown).toBeTruthy();
+		let db = await man.addDashboard("a", p.id);
+		let found = await man.getDashboardByName("a", p.id);
+		expect(found.id).toEqual(db.id);
+		await man.addWidget(w, p.id, db.id);
+		found = await man.getDashboardById(p.id, db.id);
+		expect(found.id).toEqual(db.id);
+		found = await man.getWidgetById(w.id, p.id, db.id);
+		expect(found.id).toEqual(w.id);
+
+		w.name = "abc";
+		await man.upsertWidget(w, p.id, db.id);
+		found = await man.getWidgetById(w.id, p.id, db.id);
+		expect(found.name).toEqual("abc");
+		await man.removeWidget(w.id, p.id, db.id);
+		found = await man.getWidgetById(w.id, p.id, db.id);
+		expect(found).toBeNull();
 	});
 });

@@ -1,10 +1,10 @@
 const DataManager = require("./dataManger");
 const Project = require("./project");
-const Widget = require("./widget");
+const WidgetTemplate = require("./widgetTemplate");
 const AppSettings = require("./appSettings");
 module.exports = {
-    DataManager,
-    Widget,
-    Project,
-    AppSettings
+	DataManager,
+	WidgetTemplate,
+	Project,
+	AppSettings,
 };

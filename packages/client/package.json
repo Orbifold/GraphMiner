@@ -44,7 +44,8 @@
     "vue-router": "^3.2.0",
     "vue-upload-component": "^2.8.22",
     "vuetify": "^2.6.3",
-    "vuex": "^3.4.0"
+    "vuex": "^3.4.0",
+    "vue-grid-layout": "^2.3.12"
   },
   "devDependencies": {
     "@mdi/font": "^6.5.95",

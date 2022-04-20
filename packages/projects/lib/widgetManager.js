@@ -1,7 +1,7 @@
 const { LocalStorage } = require("@graphminer/store");
 const { Utils, Strings } = require("@graphminer/utils");
 const _ = require("lodash");
-const Widget = require("./widget");
+const WidgetTemplate = require("./widgetTemplate");
 const WidgetCollectionName = "widgets";
 
 class WidgetManager {
@@ -26,7 +26,7 @@ class WidgetManager {
 		if (Utils.isEmpty(found)) {
 			return null;
 		}
-		return Widget.fromJSON(found);
+		return WidgetTemplate.fromJSON(found);
 	}
 
 	async upsertWidget(widget) {
@@ -42,7 +42,7 @@ class WidgetManager {
 	async ensureTestWidget() {
 		const found = await this.getWidgetTemplateById("test");
 		if (Utils.isEmpty(found)) {
-			await this.upsertWidget(Widget.testWidget());
+			await this.upsertWidget(WidgetTemplate.testWidget());
 		}
 	}
 }

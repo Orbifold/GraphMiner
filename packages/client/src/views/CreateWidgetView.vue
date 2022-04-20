@@ -35,7 +35,7 @@
 <script lang="ts">
 	import { Component, Prop, Vue } from "vue-property-decorator";
 	import { Utils } from "@graphminer/utils";
-	import { Widget } from "@graphminer/projects";
+	import { WidgetTemplate } from "@graphminer/projects";
 	import * as _ from "lodash";
 
 	import { PrismEditor } from "vue-prism-editor";
@@ -68,7 +68,7 @@
 		widgetDescription: string = null;
 		graph: Graph;
 		private interpreter: WidgetInterpreter;
-		private widget: Widget;
+		private widget: WidgetTemplate;
 
 		toggleRight() {
 			this.showRight = !this.showRight;
@@ -81,7 +81,7 @@
 		mounted() {
 			this.graph = RandomGraph.BalancedTree();
 			this.interpreter = new WidgetInterpreter(this.graph);
-			this.widget = Widget.testWidget();
+			this.widget = WidgetTemplate.testWidget();
 			this.code = this.widget.code;
 			// this.refreshLoop();
 			this.refresh();
@@ -116,7 +116,7 @@
 			// if (!Utils.isSimpleString(this.widgetName)) {
 			// 	return this.$ambientService.notify("The name is not a simple name.", NotificationType.Warning);
 			// }
-			const widget = new Widget(this.widgetName, this.widgetDescription, this.code);
+			const widget = new WidgetTemplate(this.widgetName, this.widgetDescription, this.code);
 
 			await this.$dataService.upsertWidget(widget);
 			this.$ambientService.notify("Saved", NotificationType.Message);

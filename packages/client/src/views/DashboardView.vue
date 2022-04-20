@@ -34,12 +34,36 @@
       </v-col>
     </v-row>
     <v-divider class="mt-2 mb-2"></v-divider>
-    <v-row v-for="(block, i) in items" :key="i" v-if="items.length > 0">
-      <v-col cols="6" v-for="(item, j) in block" :key="j">
-        <div v-if="item.error !== null">{{ item.error }}</div>
-        <ChartWidget v-else :data="item.data" :options="item.options"></ChartWidget>
-      </v-col>
+
+    <v-row>
+
     </v-row>
+    <GridLayout
+        :layout="layout"
+        :col-num="12"
+        :row-height="30"
+        :is-draggable="draggable"
+        :is-resizable="resizable"
+        :vertical-compact="true"
+        :use-css-transforms="true"
+        :responsive="responsive"
+        @breakpoint-changed="breakpointChangedEvent"
+    >
+      <GridItem v-for="(item,i) in layout"
+          :x="item.x"
+          :y="item.y"
+          :w="item.w"
+          :h="item.h"
+          :i="item.i"
+      >
+        <div>
+          <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>
+          <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>
+        </div>
+
+
+      </GridItem>
+    </GridLayout>
   </v-container>
 </template>
 
@@ -53,18 +77,26 @@ import {Project, Dashboard} from "@graphminer/projects";
 import ChartWidget from "@/components/ChartWidget.vue";
 import WidgetInterpreter from "@/shared/WidgetInterpreter";
 import DashboardDialog from "@/dialogs/DashboardDialog.vue";
+import {GridLayout, GridItem} from "vue-grid-layout";
 // ===================================================================
-// todo: dynamic layout using Vue Grid Layout https://jbaysolutions.github.io/vue-grid-layout/guide/08-responsive-predefined-layouts.html
+// https://jbaysolutions.github.io/vue-grid-layout/guide/properties.html#gridlayout
+// https://jbaysolutions.github.io/vue-grid-layout/guide/08-responsive-predefined-layouts.html
 // see also https://codepen.io/nyoung697/pen/BperoZ
 // ===================================================================
+
+
 @Component({
-  components: {ChartWidget, DashboardDialog}
+  components: {ChartWidget, DashboardDialog, GridLayout, GridItem}
 })
 export default class DashboardView extends VueBase {
   dashboard: Dashboard = null;
   items: any = [];
   widgets: any[] = [];
   dashboardId: string = null;
+layout:any[]=[];
+  draggable: boolean = true;
+  resizable: boolean = true;
+  responsive: boolean = false;
 
   async mounted() {
     await this.ensureActiveProject();
@@ -85,6 +117,9 @@ export default class DashboardView extends VueBase {
     await this.refreshWidgets();
   }
 
+  breakpointChangedEvent(newBreakpoint, newLayout) {
+  }
+
   async refreshWidgets() {
     this.widgets = await this.getWidgetTemplates();
     const g = await this.getGraph();
@@ -93,20 +128,30 @@ export default class DashboardView extends VueBase {
     const widgets = this.dashboard.widgets;
     const result = interpreter.execute(widgets);
     if (result && result.length > 0) {
-      const blocks = [];
-      let currentBlock = [];
-      while (result.length > 0) {
-        if (currentBlock.length >= 2) {
-          blocks.push(currentBlock);
-          currentBlock = [];
-        }
-        const item = result.shift();
-        currentBlock.push(item);
-      }
-      if (currentBlock.length > 0) {
-        blocks.push(currentBlock);
-      }
-      this.items = blocks;
+      // const blocks = [];
+      // let currentBlock = [];
+      // while (result.length > 0) {
+      //   if (currentBlock.length >= 2) {
+      //     blocks.push(currentBlock);
+      //     currentBlock = [];
+      //   }
+      //   const item = result.shift();
+      //   currentBlock.push(item);
+      // }
+      // if (currentBlock.length > 0) {
+      //   blocks.push(currentBlock);
+      // }
+      this.items = result;
+      this.layout = result.map((u, i) => {
+        return {
+          x: 2 * i,
+          y: i,
+          w: 1,
+          h: 1,
+          i: i,
+          obj: u
+        };
+      });
     } else {
       this.items = [];
     }
@@ -156,4 +201,64 @@ export default class DashboardView extends VueBase {
 }
 </script>
 
-<style scoped></style>
+<style>
+.vue-grid-layout {
+  background: #fff;
+}
+
+.vue-grid-item:not(.vue-grid-placeholder) {
+  background: #fff;
+  border: 1px solid silver;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.vue-grid-item .resizing {
+  opacity: 0.9;
+}
+
+.vue-grid-item .static {
+  background: #cce;
+}
+
+.vue-grid-item .text {
+  font-size: 24px;
+  text-align: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.vue-grid-item .no-drag {
+  height: 100%;
+  width: 100%;
+}
+
+.vue-grid-item .minMax {
+  font-size: 12px;
+}
+
+.vue-grid-item .add {
+  cursor: pointer;
+}
+
+.vue-draggable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0;
+  left: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><circle cx='5' cy='5' r='5' fill='#999999'/></svg>") no-repeat;
+  background-position: bottom right;
+  padding: 0 8px 8px 0;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+</style>
