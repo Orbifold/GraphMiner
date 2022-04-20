@@ -1,7 +1,7 @@
 const WidgetTemplate = require("./widgetTemplate");
 const _ = require("lodash");
 
-const { Utils } = require("@graphminer/utils");
+const { Utils, Strings } = require("@graphminer/utils");
 
 class Dashboard {
 	id;
@@ -13,13 +13,38 @@ class Dashboard {
 	 */
 	widgets = [];
 	color;
+	projectId;
 
-	constructor(name, description = null, color = null) {
+	constructor(name, description = null, color = null, projectId = null) {
 		this.name = name;
 		this.description = description;
 		this.widgets = [];
 		this.id = Utils.id();
 		this.color = color;
+		this.projectId = projectId;
+	}
+
+	addWidget(widget) {
+		if (Utils.isEmpty(widget)) {
+			throw new Error(Strings.IsNil("widget", "Dashboard.addWidget"));
+		}
+		let found = this.getWidgetById(widget.id);
+		if (found) {
+			throw new Error("There is already a widget with this id.");
+		}
+		widget.projectId = this.projectId;
+		widget.dashboardId = this.id;
+		this.widgets.push(widget);
+	}
+
+	upsertWidget(widget) {
+		if (Utils.isEmpty(widget)) {
+			throw new Error(Strings.IsNil("widget", "Dashboard.addWidget"));
+		}
+		_.remove(this.widgets, (w) => w.id === widget.id);
+		widget.projectId = this.projectId;
+		widget.dashboardId = this.id;
+		this.widgets.push(widget);
 	}
 
 	getWidgetById(widgetId) {
@@ -42,6 +67,7 @@ class Dashboard {
 			description: this.description,
 			widgets: this.widgets.map((w) => w.toJSON()),
 			color: this.color,
+			projectId: this.projectId,
 		};
 	}
 
@@ -49,12 +75,17 @@ class Dashboard {
 		const d = new Dashboard(json.name);
 		d.color = json.color;
 		d.description = json.description;
+		d.projectId = json.projectId;
 		if (Utils.isDefined(json.id)) {
 			d.id = json.id;
 		}
 		if (Utils.isDefined(json.widgets)) {
 			d.widgets = json.widgets.map((w) => WidgetTemplate.fromJSON(w));
 		}
+		d.widgets.forEach((w) => {
+			w.dashboardId = d.id;
+			w.projectId = d.projectId;
+		});
 		return d;
 	}
 }

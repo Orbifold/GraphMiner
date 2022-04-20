@@ -111,4 +111,24 @@ describe("ProjectManager", () => {
 		found = await man.getWidgetById(w.id, p.id, db.id);
 		expect(found).toBeNull();
 	});
+	it("should crud a dashboard", async function () {
+		const man = await ProjectManager.inMemory();
+		let projectName = Utils.randomId();
+		let p = await man.createProject(projectName);
+
+		let db = new Dashboard(Utils.randomId());
+		let w = new Widget("a", "a");
+		db.addWidget(w);
+		p.addDashboard(db);
+		let found = p.getDashboardById(db.id);
+		expect(found.id).toEqual(db.id);
+		found = p.getDashboardByName(db.name);
+		expect(found.id).toEqual(db.id);
+		await man.upsertProject(p);
+		found = await man.getDashboardByName(db.name, p.id);
+		expect(found.id).toEqual(db.id);
+		await man.removeDashboard(p.id, db.id);
+		found = await man.getProjectById(p.id);
+		expect(found.dashboards.length).toEqual(0);
+	});
 });
