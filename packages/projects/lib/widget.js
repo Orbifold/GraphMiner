@@ -22,7 +22,7 @@ class Widget extends WidgetTemplate {
 
 	constructor(name, description, code, dashboardId, projectId, type = "js") {
 		super(name, description, code, type);
-		this.layout = DefaultLayout;
+		this.layout = _.clone(DefaultLayout);
 		this.dashboardId = dashboardId;
 		this.projectId = projectId;
 	}
@@ -37,11 +37,11 @@ class Widget extends WidgetTemplate {
 	}
 
 	static fromJSON(json) {
-		const w = new Widget(json.name, json.description, json.code, json.type);
+		const w = new Widget(json.name, json.description, json.code, json.dashboardId, json.projectId, json.type);
 		if (json.id) {
 			w.id = json.id;
 		}
-		w.layout = json.layout || DefaultLayout;
+		w.layout = json.layout || _.clone(DefaultLayout);
 		w.dashboardId = json.dashboardId;
 		w.projectId = json.projectId;
 		return w;
@@ -55,7 +55,7 @@ class Widget extends WidgetTemplate {
 			throw new Error(Strings.ShoudBeType("template", "WidgetTemplate", "Widget.fromWidgetTemplate"));
 		}
 		const w = new Widget(template.name, template.description, template.code, template.type);
-		w.layout = DefaultLayout;
+		w.layout = _.clone(DefaultLayout);
 		w.dashboardId = dashboardId;
 		w.projectId = dashboardId;
 		return w;

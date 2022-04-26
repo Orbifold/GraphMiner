@@ -14,6 +14,10 @@ class WidgetManager {
 		return new WidgetManager(storage);
 	}
 
+	/**
+	 * Returns the name and id of all templates.
+	 * @returns {Promise<{name,id}>}
+	 */
 	async getWidgetTemplates() {
 		const found = await this.storage.find({}, WidgetCollectionName);
 		return found.map((w) => {

@@ -4,6 +4,7 @@ const Project = require("./project");
 const ProjectUtils = require("./projectUtils");
 const _ = require("lodash");
 const Dashboard = require("./dashboard");
+const Widget = require("./widget");
 
 /*
  * Manages all the projects in the store.
@@ -157,6 +158,7 @@ class ProjectManager {
 	 *
 	 * @param db {Dashboard|string}
 	 * @param projectId
+	 * @param addTestWidget
 	 * @returns {Promise<void>}
 	 */
 	async addDashboard(db, projectId) {
@@ -182,6 +184,7 @@ class ProjectManager {
 			} else {
 				throw new Error(Strings.ShoudBeType("addDashboard", "string or Dashboard", "ProjectManager.addDashboard"));
 			}
+
 			p.dashboards.push(dashboard);
 			await this.upsertProject(p);
 			return dashboard;
@@ -215,6 +218,9 @@ class ProjectManager {
 	}
 
 	async addWidget(widget, projectId, dashboardId) {
+		if (!(widget instanceof Widget)) {
+			throw new Error(Strings.ShoudBeType("widget", "Widget", "ProjectManager.addWidget"));
+		}
 		const p = await this.getProjectById(projectId);
 		if (p) {
 			const db = p.getDashboardById(dashboardId);

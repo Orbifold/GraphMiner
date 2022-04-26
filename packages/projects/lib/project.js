@@ -106,9 +106,23 @@ class Project {
 
 		const dashboard = _.find(this.dashboards, (d) => d.id === dashboardId);
 		if (dashboard) {
+			widget.layout = this.getNewCoordinates(dashboard);
+			console.log(widget.layout);
 			dashboard.widgets.push(widget);
 		}
 		return this;
+	}
+
+	getNewCoordinates(dashboard) {
+		const yMax = _.max(dashboard.widgets.map((w) => w.layout.y));
+		const h = _.max(dashboard.widgets.filter((w) => w.layout.y === yMax).map((w) => w.layout.h));
+		return {
+			x: 0,
+			y: yMax + h,
+			index: dashboard.widgets.length,
+			w: 2,
+			h: 2,
+		};
 	}
 
 	getDashboardById(dashboardId) {
@@ -136,8 +150,25 @@ class Project {
 		const db = this.getDashboardById(dashboardId);
 		if (db) {
 			_.remove(db.widgets, (w) => w.id === widgetId);
+			// this.indexWidgets(db);
 		}
 		return this;
+	}
+
+	upsertWidget(widget) {
+		const dashboardId = widget.dashboardId;
+		const projectId = widget.projectId;
+		if (Utils.isEmpty(dashboardId)) {
+			throw new Error("Missing widget dashboard id.");
+		}
+		if (Utils.isEmpty(projectId)) {
+			throw new Error("Missing widget project id.");
+		}
+		let db = this.getDashboardById(dashboardId);
+		if (Utils.isEmpty(db)) {
+			throw new Error("Dashboard does not exist.");
+		}
+		db.upsertWidget(widget);
 	}
 
 	addDashboard(spec) {

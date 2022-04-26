@@ -1,6 +1,6 @@
 import { Component, Vue } from "vue-property-decorator";
 import { Utils } from "@graphminer/utils";
-import {Project, Dashboard} from "@graphminer/projects";
+import { Project, Dashboard } from "@graphminer/projects";
 
 import { NotificationType } from "@/shared/notificationType";
 
@@ -10,8 +10,11 @@ import { NotificationType } from "@/shared/notificationType";
  * */
 
 export default class VueBase extends Vue {
-
-	get project(){
+	/**
+	 *
+	 * @returns {Project}
+	 */
+	get project() {
 		return this.$store.state.ambient.project;
 	}
 
@@ -75,12 +78,10 @@ export default class VueBase extends Vue {
 	 * @returns {Promise<any>}
 	 */
 	async ensureActiveProject() {
-
 		if (Utils.isEmpty(this.project)) {
-			this.$ambientService.notify("Select a project first.", NotificationType.Error);
-			await new Promise((r) => setTimeout(r, 500));
+			// this.$ambientService.notify("Select a project first.", NotificationType.Error);
+			// await new Promise((r) => setTimeout(r, 500));
 			return this.$ambientService.navigateTo("Projects");
 		}
-
 	}
 }

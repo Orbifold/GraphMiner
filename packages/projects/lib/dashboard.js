@@ -2,6 +2,7 @@ const WidgetTemplate = require("./widgetTemplate");
 const _ = require("lodash");
 
 const { Utils, Strings } = require("@graphminer/utils");
+const Widget = require("./widget");
 
 class Dashboard {
 	id;
@@ -80,7 +81,7 @@ class Dashboard {
 			d.id = json.id;
 		}
 		if (Utils.isDefined(json.widgets)) {
-			d.widgets = json.widgets.map((w) => WidgetTemplate.fromJSON(w));
+			d.widgets = json.widgets.map((w) => Widget.fromJSON(w));
 		}
 		d.widgets.forEach((w) => {
 			w.dashboardId = d.id;

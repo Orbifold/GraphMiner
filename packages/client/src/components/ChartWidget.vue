@@ -1,6 +1,7 @@
 <template>
 	<div v-if="data && options && options.chart && options.chart.type">
-		<Chart :options="options" :series="data"></Chart>
+<!--		<Chart :options="options" :series="data"></Chart>-->
+    <div style="background-color: #929292; border-radius: 5px;"></div>
 	</div>
 </template>
 

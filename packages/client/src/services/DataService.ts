@@ -1,133 +1,139 @@
-import {DataManager, AppSettings} from "@graphminer/projects";
-import {Store} from "vuex";
-import {Utils} from "@graphminer/utils";
+import { DataManager, AppSettings, Widget } from "@graphminer/projects";
+import { Store } from "vuex";
+import { Utils } from "@graphminer/utils";
 import vuetify from "@/plugins/vuetify";
 
 export default class DataService {
-    /**
-     *
-     * @type {DataManager}
-     */
-    private dataManager: DataManager;
-    isInitialized: boolean = false;
-    private $store: Store<any>;
+	/**
+	 *
+	 * @type {DataManager}
+	 */
+	private dataManager: DataManager;
+	isInitialized: boolean = false;
+	private $store: Store<any>;
 
-    async init($store) {
-        if (this.isInitialized) {
-            return this;
-        }
-        this.dataManager = await DataManager.browser();
-        this.$store = $store;
-        let settings = await this.dataManager.getAppSettings();
-        if (Utils.isEmpty(settings)) {
-            settings = new AppSettings();
-            await this.dataManager.saveAppSettings(settings);
-        }
-        this.$store.commit("ambient/setAppSettings", settings);
-        vuetify.framework.theme.dark = settings.theme === "dark";
-        return this;
-    }
+	async init($store) {
+		if (this.isInitialized) {
+			return this;
+		}
+		this.dataManager = await DataManager.browser();
+		this.$store = $store;
+		let settings = await this.dataManager.getAppSettings();
+		if (Utils.isEmpty(settings)) {
+			settings = new AppSettings();
+			await this.dataManager.saveAppSettings(settings);
+		}
+		this.$store.commit("ambient/setAppSettings", settings);
+		vuetify.framework.theme.dark = settings.theme === "dark";
+		return this;
+	}
 
-    async createProject(...projectSpecs) {
-        return this.dataManager.createProject(...projectSpecs);
-    }
+	async createProject(...projectSpecs) {
+		return this.dataManager.createProject(...projectSpecs);
+	}
 
-    async removeProject(projectId) {
-        return this.dataManager.removeProject(projectId);
-    }
+	async removeProject(projectId) {
+		return this.dataManager.removeProject(projectId);
+	}
 
-    async getAllProjects() {
-        return this.dataManager.getAllProjects();
-    }
+	async getAllProjects() {
+		return this.dataManager.getAllProjects();
+	}
 
-    async getProjectNames() {
-        return this.dataManager.getProjectNames();
-    }
+	async getProjectNames() {
+		return this.dataManager.getProjectNames();
+	}
 
-    async getAllDashboards() {
-        return this.dataManager.getAllDashboards();
-    }
+	async getAllDashboards() {
+		return this.dataManager.getAllDashboards();
+	}
 
-    async getProject(projectId) {
-        return this.dataManager.getProjectById(projectId);
-    }
+	async getProject(projectId) {
+		return this.dataManager.getProjectById(projectId);
+	}
 
-    async projectNameExists(projectName) {
-        return this.dataManager.projectNameExists(projectName);
-    }
+	async projectNameExists(projectName) {
+		return this.dataManager.projectNameExists(projectName);
+	}
 
-    /**
-     * The one and only place to switch project.
-     * @param projectId
-     * @returns {Promise<void>}
-     */
-    async setActiveProject(projectId) {
-        const project = await this.dataManager.getProjectById(projectId);
-        window["project"] = project;
+	/**
+	 * The one and only place to switch project.
+	 * @param projectId
+	 * @returns {Promise<void>}
+	 */
+	async setActiveProject(projectId) {
+		const project = await this.dataManager.getProjectById(projectId);
+		window["project"] = project;
 
-        this.$store.commit("ambient/setProject", project);
-    }
+		this.$store.commit("ambient/setProject", project);
+	}
 
-    async getActiveProject() {
-        return this.$store.state.ambient.project;
-    }
+	async getActiveProject() {
+		return this.$store.state.ambient.project;
+	}
 
-    async getSpaceAsGraphJson(projectId) {
-        return this.dataManager.getSpaceAsGraphJson(projectId);
-    }
+	async getSpaceAsGraphJson(projectId) {
+		return this.dataManager.getSpaceAsGraphJson(projectId);
+	}
 
-    async upsertWidget(widget) {
-        return this.dataManager.upsertWidget(widget);
-    }
+	async upsertWidget(widget) {
+		return this.dataManager.upsertWidget(widget);
+	}
 
-    async upsertProject(project) {
-        if (this.$store.state.ambient.project?.id === project.id) {
-            this.$store.commit("ambient/setProject", project);
-        }
-        return this.dataManager.upsertProject(project);
-    }
+	async upsertProject(project) {
+		if (this.$store.state.ambient.project?.id === project.id) {
+			this.$store.commit("ambient/setProject", project);
+		}
+		return this.dataManager.upsertProject(project);
+	}
 
-    async getWidgetTemplateById(id) {
-        return this.dataManager.getWidgetTemplateById(id);
-    }
+	async getWidgetTemplateById(id) {
+		return this.dataManager.getWidgetTemplateById(id);
+	}
 
-    async createDashboard(projectId, name, description,color) {
-        const db = await this.dataManager.createDashboard(projectId, name, description,color);
-        // update the store
-        await this.setActiveProject(projectId);
-        return db;
-    }
+	async createDashboard(projectId, name, description, color) {
+		const db = await this.dataManager.createDashboard(projectId, name, description, color);
+		// update the store
+		await this.setActiveProject(projectId);
+		return db;
+	}
 
-    /**
-     *
-     * @param projectId
-     * @returns {Promise<Graph>}
-     */
-    async getGraph(projectId) {
-        return await this.dataManager.getGraph(projectId);
-    }
+	/**
+	 *
+	 * @param projectId
+	 * @returns {Promise<Graph>}
+	 */
+	async getGraph(projectId) {
+		return await this.dataManager.getGraph(projectId);
+	}
 
-    async addWidget(projectId, dashboardId, widgetTemplateId) {
-        const widgetTemplate = await this.getWidgetTemplateById(widgetTemplateId);
-        if (widgetTemplate) {
-            const widget = widgetTemplate.clone();
-            const project = await this.getActiveProject();
-            project.addWidget(widget, dashboardId);
-            await this.dataManager.save(project);
-            await this.setActiveProject(projectId);
-        }
-    }
+	async addWidget(projectId, dashboardId, widgetTemplateId) {
+		const widgetTemplate = await this.getWidgetTemplateById(widgetTemplateId);
 
-    async getWidgetTemplates() {
-        return await this.dataManager.getWidgetTemplates();
-    }
+		if (widgetTemplate) {
+			const widget = Widget.fromWidgetTemplate(widgetTemplate, dashboardId, projectId);
+			const project = await this.getActiveProject();
+			project.addWidget(widget, dashboardId);
+			await this.dataManager.save(project);
+			await this.setActiveProject(projectId);
+		} else {
+			throw new Error(`Could not find widget template with id '${widgetTemplateId}'.`);
+		}
+	}
+	/**
+	 * Returns the name and id of all templates.
+	 * @returns {Promise<{name,id}>}
+	 */
+	async getWidgetTemplates() {
+		return await this.dataManager.getWidgetTemplates();
+	}
 
-    getAppSettings() {
-        return this.$store.state.ambient.appSettings;
-    }
+	getAppSettings() {
+		return this.$store.state.ambient.appSettings;
+	}
 
-    async saveAppSettings(appSettings) {
-        this.$store.commit("ambient/setAppSettings", appSettings);
-        await this.dataManager.saveAppSettings(appSettings);
-    }
+	async saveAppSettings(appSettings) {
+		this.$store.commit("ambient/setAppSettings", appSettings);
+		await this.dataManager.saveAppSettings(appSettings);
+	}
 }

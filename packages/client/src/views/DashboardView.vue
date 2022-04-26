@@ -7,11 +7,14 @@
         <h1>
           <v-icon>$dashboard</v-icon>
           {{ dashboard.name }}
-          <v-btn color="error" x-small icon depressed @click="deleteDashboard" title="Delete this project">
+          <v-btn color="error" x-small icon depressed @click="deleteDashboard" title="Delete this dashboard">
             <v-icon>$bin</v-icon>
           </v-btn>
-          <v-btn x-small icon depressed @click="editDashboard" title="Edit this project">
+          <v-btn x-small icon depressed @click="editDashboard" title="Edit this dashboard">
             <v-icon>$pen</v-icon>
+          </v-btn>
+          <v-btn x-small icon depressed @click="refreshWidgets" title="Refresh this dashboard">
+            <v-icon>$refresh</v-icon>
           </v-btn>
         </h1>
         <div title="Back to the project page" style="cursor: pointer" @click="gotoProject">Project: {{ project.name }}</div>
@@ -26,7 +29,7 @@
             <v-btn color="primary" v-bind="attrs" v-on="on" depressed class="float-right"> Add Widget</v-btn>
           </template>
           <v-list>
-            <v-list-item v-for="(item, index) in widgets" :key="index" @click="addWidget(item)">
+            <v-list-item v-for="(item, index) in widgetTemplates" :key="index" @click="addWidget(item)">
               <v-list-item-title>{{ item.name }}</v-list-item-title>
             </v-list-item>
           </v-list>
@@ -35,9 +38,7 @@
     </v-row>
     <v-divider class="mt-2 mb-2"></v-divider>
 
-    <v-row>
 
-    </v-row>
     <GridLayout
         :layout="layout"
         :col-num="12"
@@ -48,6 +49,8 @@
         :use-css-transforms="true"
         :responsive="responsive"
         @breakpoint-changed="breakpointChangedEvent"
+        @layout-ready="layoutReady"
+        style="border:1px solid silver; height: 100vh"
     >
       <GridItem v-for="(item,i) in layout"
           :x="item.x"
@@ -55,10 +58,20 @@
           :w="item.w"
           :h="item.h"
           :i="item.i"
+          :static="false"
+          @resized="resized"
+          @moved="moved"
+          style="display: flex; overflow: hidden;padding: 7px;"
       >
+        <div style="background-color: #18c426; flex-grow: 1">
+
+          <span>Widget {{ item.i }}</span>
+
+        </div>
         <div>
-          <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>
-          <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>
+          <!--          <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>-->
+          <!--          <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>-->
+
         </div>
 
 
@@ -90,10 +103,10 @@ import {GridLayout, GridItem} from "vue-grid-layout";
 })
 export default class DashboardView extends VueBase {
   dashboard: Dashboard = null;
-  items: any = [];
-  widgets: any[] = [];
+  widgetTemplates: any[] = [];
   dashboardId: string = null;
-layout:any[]=[];
+  widgets: any[] = [];
+  layout: any[] = [];
   draggable: boolean = true;
   resizable: boolean = true;
   responsive: boolean = false;
@@ -102,11 +115,24 @@ layout:any[]=[];
     await this.ensureActiveProject();
     this.dashboardId = this.$ambientService.getQueryParameter("dashboardId");
     if (Utils.isEmpty(this.dashboardId)) {
-      this.$ambientService.notify("No dashboard id specified.", NotificationType.Error);
-      await new Promise((r) => setTimeout(r, 2000));
+      // this.$ambientService.notify("No dashboard id specified.", NotificationType.Error);
+      // await new Promise((r) => setTimeout(r, 2000));
       return this.$ambientService.navigateTo("Projects");
     }
 
+
+    await this.refreshTemplateList();
+    await this.refreshWidgets();
+  }
+
+  breakpointChangedEvent(newBreakpoint, newLayout) {
+  }
+
+  async refreshTemplateList() {
+    this.widgetTemplates = await this.getWidgetTemplates();
+  }
+
+  async refreshWidgets() {
     const found = _.find(this.project.dashboards, (d) => d.id === this.dashboardId);
     if (Utils.isEmpty(found)) {
       this.$ambientService.notify("The specified dashboard does not exist.", NotificationType.Error);
@@ -114,46 +140,36 @@ layout:any[]=[];
       return this.$ambientService.navigateTo("Projects");
     }
     this.dashboard = found;
-    await this.refreshWidgets();
-  }
+    this.widgets = this.dashboard.widgets;
 
-  breakpointChangedEvent(newBreakpoint, newLayout) {
-  }
-
-  async refreshWidgets() {
-    this.widgets = await this.getWidgetTemplates();
     const g = await this.getGraph();
 
     const interpreter = new WidgetInterpreter(g);
-    const widgets = this.dashboard.widgets;
-    const result = interpreter.execute(widgets);
+
+    const result = interpreter.execute(this.widgets);
     if (result && result.length > 0) {
-      // const blocks = [];
-      // let currentBlock = [];
-      // while (result.length > 0) {
-      //   if (currentBlock.length >= 2) {
-      //     blocks.push(currentBlock);
-      //     currentBlock = [];
-      //   }
-      //   const item = result.shift();
-      //   currentBlock.push(item);
-      // }
-      // if (currentBlock.length > 0) {
-      //   blocks.push(currentBlock);
-      // }
-      this.items = result;
-      this.layout = result.map((u, i) => {
+      // this.widgets = result.map((u, i) => {
+      //   return {
+      //     x: i,
+      //     y: i,
+      //     w: 1,
+      //     h: 1,
+      //     i: i,
+      //     obj: u,
+      //     static: true
+      //   };
+      // });
+      this.layout = this.widgets.map(w => {
         return {
-          x: 2 * i,
-          y: i,
-          w: 1,
-          h: 1,
-          i: i,
-          obj: u
+          x: w.layout.x,
+          y: w.layout.y,
+          i: w.layout.index,
+          w: w.layout.w,
+          h: w.layout.h
         };
       });
     } else {
-      this.items = [];
+      this.widgets = [];
     }
   }
 
@@ -167,6 +183,10 @@ layout:any[]=[];
     await this.refreshWidgets();
   }
 
+  /**
+   * Returns the name and id of all templates.
+   * @returns {Promise<{name,id}>}
+   */
   async getWidgetTemplates() {
     return await this.$dataService.getWidgetTemplates();
   }
@@ -197,6 +217,37 @@ layout:any[]=[];
       await this.$dataService.upsertProject(this.project);
       this.$ambientService.navigateTo("Project");
     }
+  }
+
+  async resized(i, h, w, hpx, wpx) {
+    await this.saveLayout();
+  }
+
+  async moved(i, x, y) {
+    await this.saveLayout();
+  }
+
+  async saveLayout() {
+    this.layout.forEach(l => {
+      const w = this.getWidgetByIndex(l.i);
+      w.layout = {
+        index: l.i,
+        x: l.x,
+        y: l.y,
+        w: l.w,
+        h: l.h
+      };
+    });
+    await this.$dataService.upsertProject(this.project);
+
+  }
+
+  getWidgetByIndex(index) {
+    return _.find(this.widgets, w => w.layout.index === index);
+  }
+
+  layoutReady(newLayout) {
+    console.log("Ready layout: ", newLayout);
   }
 }
 </script>
