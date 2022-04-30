@@ -121,12 +121,14 @@ footer a {
   margin-bottom: 15px;
   font-size: small;
 }
+
 .truncated-text:before {
   content: '...';
   position: absolute;
   right: 0;
   bottom: 0;
 }
+
 .truncated-text:after {
   content: '';
   position: absolute;
@@ -135,5 +137,16 @@ footer a {
   height: 1em;
   margin-top: 0.2em;
 
+}
+
+.widget-delete {
+  background-color: rgb(255 255 255);
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid orangered;
+  border-radius: 100%;
 }
 </style>

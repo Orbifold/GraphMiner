@@ -23,8 +23,10 @@
       <v-col>
         <div class="truncated-text"> {{ dashboard.description }}</div>
       </v-col>
-      <v-col cols="1">
-        <v-menu offset-y style="z-index: 20">
+      <v-col cols="2" class="d-flex flex-column">
+
+        <v-switch v-model="editMode" label="Edit Mode" style="float:right"></v-switch>
+        <v-menu offset-y style="z-index: 20" v-if="editMode" right>
           <template v-slot:activator="{ on, attrs }">
             <v-btn color="primary" v-bind="attrs" v-on="on" depressed class="float-right"> Add Widget</v-btn>
           </template>
@@ -48,8 +50,6 @@
         :vertical-compact="true"
         :use-css-transforms="true"
         :responsive="responsive"
-        @breakpoint-changed="breakpointChangedEvent"
-        @layout-ready="layoutReady"
         style="border:1px solid silver; height: 100vh"
     >
       <GridItem v-for="(item,i) in layout"
@@ -58,20 +58,20 @@
           :w="item.w"
           :h="item.h"
           :i="item.i"
-          :static="false"
+          :static="!editMode"
           @resized="resized"
           @moved="moved"
           style="display: flex; overflow: hidden;padding: 7px;"
       >
-        <div style="background-color: #18c426; flex-grow: 1">
+        <!--        <div style="background-color: #18c426; flex-grow: 1">-->
 
-          <span>Widget {{ item.i }}</span>
+        <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>
+        <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>
 
-        </div>
-        <div>
-          <!--          <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>-->
-          <!--          <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>-->
 
+        <!--          <span>Widget {{ item.i }}</span>-->
+        <div v-if="editMode" class="widget-delete">
+          <button title="Delete this widget from the dashboard" style="  color:orangered; margin: 0 5px;z-index: 50;" @click="removeItem(item.i)"><i style="font-size: 30px; margin:0 4px" class="mdi mdi-delete"></i></button>
         </div>
 
 
@@ -81,7 +81,7 @@
 </template>
 
 <script lang="ts">
-import {Component, Prop, Vue} from "vue-property-decorator";
+import {Component, Prop, Vue, Watch} from "vue-property-decorator";
 import {Utils} from "@graphminer/utils";
 import VueBase from "@/views/vueBase";
 import * as _ from "lodash";
@@ -110,6 +110,7 @@ export default class DashboardView extends VueBase {
   draggable: boolean = true;
   resizable: boolean = true;
   responsive: boolean = false;
+  editMode: boolean = false;
 
   async mounted() {
     await this.ensureActiveProject();
@@ -123,10 +124,12 @@ export default class DashboardView extends VueBase {
 
     await this.refreshTemplateList();
     await this.refreshWidgets();
+
+    setTimeout(() => {
+      this.refreshWidgets();
+    }, 500);
   }
 
-  breakpointChangedEvent(newBreakpoint, newLayout) {
-  }
 
   async refreshTemplateList() {
     this.widgetTemplates = await this.getWidgetTemplates();
@@ -148,28 +151,26 @@ export default class DashboardView extends VueBase {
 
     const result = interpreter.execute(this.widgets);
     if (result && result.length > 0) {
-      // this.widgets = result.map((u, i) => {
-      //   return {
-      //     x: i,
-      //     y: i,
-      //     w: 1,
-      //     h: 1,
-      //     i: i,
-      //     obj: u,
-      //     static: true
-      //   };
-      // });
-      this.layout = this.widgets.map(w => {
+
+      this.layout = this.widgets.map((w, j) => {
         return {
           x: w.layout.x,
           y: w.layout.y,
           i: w.layout.index,
           w: w.layout.w,
-          h: w.layout.h
+          h: w.layout.h,
+          obj: result[j]
         };
       });
     } else {
       this.widgets = [];
+    }
+  }
+
+  @Watch("editMode")
+  editModeChanged() {
+    if (!this.editMode) {
+      this.refreshWidgets();
     }
   }
 
@@ -246,8 +247,20 @@ export default class DashboardView extends VueBase {
     return _.find(this.widgets, w => w.layout.index === index);
   }
 
-  layoutReady(newLayout) {
-    console.log("Ready layout: ", newLayout);
+
+  async removeItem(index) {
+
+    const coll = [];
+    this.widgets.forEach(w => {
+      if (w.layout.index !== index) {
+        coll.push(w);
+      }
+    });
+    this.widgets = coll;
+    this.dashboard.widgets = coll;
+    this.layout.splice(this.layout.map(item => item.i).indexOf(index), 1);
+
+    await this.saveLayout();
   }
 }
 </script>

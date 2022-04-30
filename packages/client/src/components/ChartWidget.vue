@@ -1,50 +1,50 @@
 <template>
-	<div v-if="data && options && options.chart && options.chart.type">
-<!--		<Chart :options="options" :series="data"></Chart>-->
-    <div style="background-color: #929292; border-radius: 5px;"></div>
-	</div>
+  <div style="width: 100%" v-if="data && options && options.chart && options.chart.type">
+    <Chart :options="options" :series="data"></Chart>
+    <!--    <div style="background-color: #929292; border-radius: 5px;"></div>-->
+  </div>
 </template>
 
 <script lang="ts">
-	import { Component, Prop, Vue, Watch } from "vue-property-decorator";
-	import { identity } from "lodash";
-	import { Utils } from "@graphminer/utils";
+import {Component, Prop, Vue, Watch} from "vue-property-decorator";
+import {identity} from "lodash";
+import {Utils} from "@graphminer/utils";
 
-	// ===================================================================
-	// See the Apexchart docs
-	// https://apexcharts.com/docs/series/
-	// ===================================================================
-	@Component({
-		components: {},
-	})
-	export default class ChartWidget extends Vue {
-		@Prop() data: any;
-		@Prop() options: any;
-		chartData: any = [];
-		chartOptions: any = null;
+// ===================================================================
+// See the Apexchart docs
+// https://apexcharts.com/docs/series/
+// ===================================================================
+@Component({
+  components: {}
+})
+export default class ChartWidget extends Vue {
+  @Prop() data: any;
+  @Prop() options: any;
+  chartData: any = [];
+  chartOptions: any = null;
 
-		mounted() {
-			this.refresh();
-		}
+  mounted() {
+    this.refresh();
+  }
 
-		refresh() {
-			this.onNewData();
-			this.onNewOptions();
-		}
+  refresh() {
+    this.onNewData();
+    this.onNewOptions();
+  }
 
-		@Watch("data")
-		onNewData() {
-			this.chartData = this.data || [];
-		}
+  @Watch("data")
+  onNewData() {
+    this.chartData = this.data || [];
+  }
 
-		@Watch("options")
-		onNewOptions() {
-			if (Utils.isEmpty(this.options)) {
-				return;
-			}
-			this.chartOptions = this.options;
-		}
-	}
+  @Watch("options")
+  onNewOptions() {
+    if (Utils.isEmpty(this.options)) {
+      return;
+    }
+    this.chartOptions = this.options;
+  }
+}
 </script>
 
 <style scoped></style>

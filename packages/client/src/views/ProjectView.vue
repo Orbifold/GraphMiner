@@ -36,38 +36,46 @@
 
       </v-col
       >
-      <v-col>
-        <v-btn @click="addNewDashboard" depressed color="success" class="float-right">New Dashboard</v-btn>
+      <v-col cols="2" class="d-flex flex-column">
+        <v-btn @click="addNewDashboard" depressed small outlined color="success" class="float-right">
+          <v-icon>$dashboard</v-icon>
+          New Dashboard
+        </v-btn>
+
+        <v-btn @click="viewData" depressed small outlined color="success" class="float-right mt-2">
+          <v-icon>$database</v-icon>
+          Data
+        </v-btn>
       </v-col>
     </v-row>
 
     <v-divider class="mt-2 mb-2"></v-divider>
 
-    <v-row >
-        <v-card v-for="(item, i) in dashboards" :key="i" class="mx-2 my-2" height="180" width="280"  flat outlined>
-          <div :style="{height: '10px','background-color':item.color}"></div>
-          <v-card-title>
-            <v-icon>$dashboard</v-icon>
-            {{ item.name }}
-          </v-card-title>
-          <v-card-subtitle class="pb-0">
-            <v-chip class="mt-2 mb-2" color="green darken" text-color="white" x-small>Dashboard</v-chip>
-          </v-card-subtitle>
-          <v-card-text class="text--primary">
-            <div class="text-truncate"><i>{{ item.description || "&nbsp;" }}</i></div>
-          </v-card-text>
+    <v-row>
+      <v-card v-for="(item, i) in dashboards" :key="i" class="mx-2 my-2" height="180" width="280" flat outlined>
+        <div :style="{height: '10px','background-color':item.color}"></div>
+        <v-card-title>
+          <v-icon>$dashboard</v-icon>
+          {{ item.name }}
+        </v-card-title>
+        <v-card-subtitle class="pb-0">
+          <v-chip class="mt-2 mb-2" color="green darken" text-color="white" x-small>Dashboard</v-chip>
+        </v-card-subtitle>
+        <v-card-text class="text--primary">
+          <div class="text-truncate"><i>{{ item.description || "&nbsp;" }}</i></div>
+        </v-card-text>
 
-          <v-card-actions>
-            <v-btn color="primary6" text @click="openDashboard(item.id)"> Open</v-btn>
-            <v-spacer></v-spacer>
-            <v-btn color="error" x-small icon depressed @click="deleteDashboard(item.id)" title="Delete this project">
-              <v-icon>$bin</v-icon>
-            </v-btn>
-            <v-btn x-small icon depressed @click="editDashboard(item.id)" title="Edit this project">
-              <v-icon>$pen</v-icon>
-            </v-btn>
-          </v-card-actions>
-        </v-card>
+        <v-card-actions>
+          <v-btn color="primary6" text @click="openDashboard(item.id)"> Open</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="error" x-small icon depressed @click="deleteDashboard(item.id)" title="Delete this project">
+            <v-icon>$bin</v-icon>
+          </v-btn>
+          <v-btn x-small icon depressed @click="editDashboard(item.id)" title="Edit this project">
+            <v-icon>$pen</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
     </v-row>
   </v-container>
 </template>
@@ -125,6 +133,10 @@ export default class ProjectView extends VueBase {
 
   }
 
+  viewData() {
+    this.$ambientService.navigateTo("Explore");
+  }
+
   async editDashboard(dashboardId) {
 
     const dashboard = this.project.getDashboardById(dashboardId);
@@ -161,12 +173,13 @@ export default class ProjectView extends VueBase {
 
     }
   }
-  async deleteProject(){
+
+  async deleteProject() {
     const yn = await this.$ambientService.confirm("Delete Project", "Are you sure?");
     if (yn) {
       await this.$dataService.removeProject(this.project.id);
-     this.$store.commit("ambient/setProject",null)
-      this.navigateTo("Projects")
+      this.$store.commit("ambient/setProject", null);
+      this.navigateTo("Projects");
     }
   }
 }
