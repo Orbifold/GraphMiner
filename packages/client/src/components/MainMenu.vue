@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="border-bottom:1px solid #738fc2">
     <v-menu offset-y open-on-hover>
       <template v-slot:activator="{ on, attrs }">
         <v-btn class="primary lighten-2 white--text rounded-0 text-md-body-2" text small v-bind="attrs" width="130px" v-on="on"> Views</v-btn>
@@ -59,8 +59,8 @@ export default class MainMenu extends Vue {
       icon: "$brush"
     },
     {
-      title: "Create Widget",
-      target: "CreateWidget",
+      title: "Widget Manager",
+      target: "Widgets",
       icon: "$widget"
     },
     {

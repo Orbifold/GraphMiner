@@ -1,61 +1,74 @@
-const { Utils } = require("@graphminer/utils");
+const {Utils} = require("@graphminer/utils");
+const PredefinedWidgets = require("./widgetTemplates.json");
+const _ = require("lodash");
 
 /*
  * A widget template serves a starting point for an actual widget in a dashboard.
  */
 class WidgetTemplate {
-	id;
-	name;
-	description;
-	code;
-	type = null;
-	typeName = "WidgetTemplate";
+    id;
+    name;
+    description;
+    code;
+    /**
+     * Defines how the widget code will be interpreted.
+     * @type {string|null}
+     */
+    language = null;
+    /**
+     * What type of visualization will be rendered.
+     * @type {string|null}
+     */
+    renderer = null;
 
-	constructor(name, description, code, type = "js") {
-		this.id = Utils.id();
-		// if (!Utils.isSimpleString(name)) {
-		// 	throw new Error("Should be a simple name.");
-		// }
-		this.name = name;
-		this.description = description;
-		this.code = code;
-		this.type = type;
-	}
+    typeName = "WidgetTemplate";
 
-	toJSON() {
-		return {
-			id: this.id,
-			name: this.name,
-			description: this.description,
-			code: this.code,
-			type: this.type,
-			typeName: "WidgetTemplate",
-		};
-	}
+    constructor(name, description, code, language = "js", renderer = "bar") {
+        this.id = Utils.id();
+        this.renderer = renderer;
+        this.name = name;
+        this.description = description;
+        this.code = code;
+        this.language = language;
+    }
 
-	static fromJSON(json) {
-		const w = new WidgetTemplate(json.name, json.description, json.code, json.type);
-		if (json.id) {
-			w.id = json.id;
-		}
-		return w;
-	}
+    toJSON() {
+        return {
+            id: this.id,
+            name: this.name,
+            description: this.description,
+            code: this.code,
+            language: this.language,
+            typeName: "WidgetTemplate",
+            renderer: this.renderer
+        };
+    }
 
-	clone() {
-		const w = WidgetTemplate.fromJSON(this.toJSON());
-		w.id = Utils.id();
-		return w;
-	}
+    static fromJSON(json) {
+        const w = new WidgetTemplate(json.name, json.description, json.code, json.language, json.renderer);
+        if (json.id) {
+            w.id = json.id;
+        }
+        return w;
+    }
 
-	static testWidget() {
-		const code = `
-			this.data = this.sampleData();
-			this.options = this.sampleOptions();
-		`;
-		const w = new WidgetTemplate("test", "Sample widget", code, "js");
-		w.id = "test";
-		return w;
-	}
+    /**
+     * Returns a blank or starter
+     */
+    static empty() {
+        return new WidgetTemplate("New Widget Template", "Add some info about this template.", "// add your code")
+    }
+
+    clone() {
+        const w = WidgetTemplate.fromJSON(this.toJSON());
+        w.id = Utils.id();
+        return w;
+    }
+
+    static dummyWidget() {
+        const json = _.find(PredefinedWidgets, u => u.id === "dummy")
+        return WidgetTemplate.fromJSON(json)
+    }
 }
 
 module.exports = WidgetTemplate;

@@ -86,7 +86,6 @@ import {Utils} from "@graphminer/utils";
 import {Project, Dashboard} from "@graphminer/projects";
 import VueBase from "@/views/vueBase";
 import * as _ from "lodash";
-import {Lang, Random} from "@graphminer/language";
 import DashboardDialog from "@/dialogs/DashboardDialog.vue";
 import ProjectDialog from "@/dialogs/ProjectDialog.vue";
 

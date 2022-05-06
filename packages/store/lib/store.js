@@ -57,7 +57,11 @@ class Store {
     }
 
 
-    remove(specs = {}, collectionName) {
+    remove(doc = {}, collectionName) {
+        throw new Error(Strings.NotImplementedAbstract())
+    }
+
+    removeWhere(specs = {}, collectionName) {
         throw new Error(Strings.NotImplementedAbstract())
     }
 

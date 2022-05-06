@@ -3,8 +3,8 @@ const WidgetTemplate = require("./widgetTemplate");
 const DefaultLayout = {
     x: 0,
     y: 0,
-    w: 4,
-    h: 3,
+    w: 6,
+    h: 6,
     index: 0,
 };
 
@@ -20,8 +20,8 @@ class Widget extends WidgetTemplate {
     dashboardId;
     projectId;
 
-    constructor(name, description, code, dashboardId, projectId, type = "js") {
-        super(name, description, code, type);
+    constructor(name, description, code, dashboardId, projectId, language = "js", renderer = "bar") {
+        super(name, description, code, language, renderer);
         this.layout = _.clone(DefaultLayout);
         this.dashboardId = dashboardId;
         this.projectId = projectId;
@@ -37,7 +37,7 @@ class Widget extends WidgetTemplate {
     }
 
     static fromJSON(json) {
-        const w = new Widget(json.name, json.description, json.code, json.dashboardId, json.projectId, json.type);
+        const w = new Widget(json.name, json.description, json.code, json.dashboardId, json.projectId, json.language, json.renderer);
         if (json.id) {
             w.id = json.id;
         }
@@ -54,12 +54,13 @@ class Widget extends WidgetTemplate {
         if (template.typeName !== "WidgetTemplate") {
             throw new Error(Strings.ShoudBeType("template", "WidgetTemplate", "Widget.fromWidgetTemplate"));
         }
-        const w = new Widget(template.name, template.description, template.code, template.type);
+        const w = new Widget(template.name, template.description, template.code, dashboardId, projectId, template.language, template.renderer);
         w.layout = _.clone(DefaultLayout);
         w.dashboardId = dashboardId;
         w.projectId = dashboardId;
         return w;
     }
+
 
     clone() {
         const w = Widget.fromJSON(this.toJSON());
@@ -69,3 +70,27 @@ class Widget extends WidgetTemplate {
 }
 
 module.exports = Widget;
+this.data = [
+    {
+        name: "A",
+        data: _.range(12).map(u => Math.random() * 10)
+    },
+    {
+        name: "B",
+        data: _.range(12).map(u => Math.random() * 10)
+    }
+]
+this.options = {
+    chart: {
+        height: "100%",
+        width: "100%",
+        type: "line"
+    },
+    stroke: {
+        width: 1.3,
+        curve: "smooth",
+    },
+    colors: ["#ff1245", "green"],
+    yaxis: {labels: {show: false}}
+
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "dummy",
+    "name": "Dummy",
+    "description": "A test widget.",
+    "language": "js",
+    "renderer": "bar",
+    "code": "this.data = this.sampleData();\nthis.options = this.sampleOptions();"
+  },
+  {
+    "id": "smooth",
+    "name": "Smooth",
+    "description": "An area chart",
+    "language": "js",
+    "renderer": "area",
+    "code": "this.data = this.sampleData();\nthis.options = this.sampleOptions();\nthis.options.chart.type=\"area\";\nthis.options.fill = {\n    type: \"gradient\",\n    gradient: {\n      shadeIntensity: 1,\n      opacityFrom: 0.7,\n      opacityTo: 0.9,\n      stops: [0, 90, 100]\n    }\n  }\n  this.options.dataLabels = {\n    enabled: false\n  }\n  this.options.stroke={\n  width:1\n  }"
+  },
+  {
+    "id": "line",
+    "name": "Line",
+    "description": "A line chart",
+    "language": "js",
+    "renderer": "line",
+    "code": "this.data = [\n    {\n        name: \"A\",\n        data: _.range(12).map(u=>Math.random()*10)\n    },\n    {\n        name: \"B\",\n        data: _.range(12).map(u=>Math.random()*10)\n    }\n]\nthis.options = {\n    chart: {\n        height: \"100%\",\n        width: \"100%\",\n        type: \"line\"\n    },\n    stroke:{\n        width: 1.3 ,\n        curve: \"smooth\",\n    },\n    colors:[\"#ff1245\", \"green\"],\n    yaxis:{labels:{show:false}}\n\n}"
+  },
+  {
+    "id": "pie",
+    "name": "Pie",
+    "description": "A pie chart",
+    "language": "js",
+    "renderer": "pie",
+    "code": "this.data = _.range(5).map(i=>Math.random()*10);\nthis.options = {\n  chart:{type:\"pie\"},\n  labels:[\"A\",\"B\",\"C\",\"D\",\"E\"]\n}"
+  },
+  {
+    "id": "md",
+    "name": "Markdown",
+    "description": "Some markdown text.",
+    "language": "md",
+    "renderer": "markdown",
+    "code": "# GraphMiner\n- a\n- b\nYou can use `markdown` in a dashboard."
+  }
+]

@@ -1,6 +1,6 @@
 <template>
   <div style="width: 100%" v-if="data && options && options.chart && options.chart.type">
-    <Chart :options="options" :series="data"></Chart>
+    <Chart ref="chart" :options="options" :series="data"></Chart>
     <!--    <div style="background-color: #929292; border-radius: 5px;"></div>-->
   </div>
 </template>
@@ -43,6 +43,14 @@ export default class ChartWidget extends Vue {
       return;
     }
     this.chartOptions = this.options;
+  }
+
+  async getChartImageData() {
+    const chart = (this.$refs.chart as any).chart;
+    return await chart.dataURI();
+    // const ctx = chart.ctx;
+    // debugger
+    // ctx.exports.exportToSVG(ctx);
   }
 }
 </script>

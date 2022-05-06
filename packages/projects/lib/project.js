@@ -114,6 +114,15 @@ class Project {
     }
 
     getNewCoordinates(dashboard) {
+        if (dashboard.widgets.length === 0) {
+            return {
+                x: 0,
+                y: 0,
+                index: 0,
+                w: 6,
+                h: 6
+            }
+        }
         const yMax = _.max(dashboard.widgets.map((w) => w.layout.y));
         const h = _.max(dashboard.widgets.filter((w) => w.layout.y === yMax).map((w) => w.layout.h));
         const maxIndex = _.max(dashboard.widgets.map(w => w.layout.index));
@@ -121,8 +130,8 @@ class Project {
             x: 0,
             y: yMax + h,
             index: maxIndex + 1,
-            w: 4,
-            h: 4,
+            w: 6,
+            h: 6
         };
     }
 

@@ -20,7 +20,21 @@
       </v-btn>
     </v-app-bar>
     <v-navigation-drawer v-model="leftDrawer" fixed left temporary></v-navigation-drawer>
-    <v-navigation-drawer v-model="rightDrawer" fixed right temporary></v-navigation-drawer>
+    <v-navigation-drawer v-model="rightDrawer" fixed right temporary>
+      <div class=" my-2 mx-4">
+        <h1>Settings</h1>
+        <v-card elevation="0" outlined class="mt-2">
+          <v-card-subtitle>Reset Widget Template Collection</v-card-subtitle>
+          <v-card-text>
+            This will replace the widget template collection with the predefined collection. All custom templates and changes will be lost through this action.
+          </v-card-text>
+          <v-card-actions>
+            <v-btn color="primary" depressed small @click="resetWidgetTemplates">Reset WidgetTemplates</v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
+
+    </v-navigation-drawer>
     <v-main>
       <MainMenu></MainMenu>
 
@@ -49,6 +63,7 @@ import MainMenu from "@/components/MainMenu.vue";
 import NotificationDialog from "@/dialogs/NotificationDialog.vue";
 import {NotificationType} from "@/shared/notificationType";
 import vuetify from "@/plugins/vuetify";
+
 
 @Component({
   components: {AboutDialog, MainMenu, ConfirmationDialog, NotificationDialog}
@@ -97,10 +112,16 @@ export default class App extends Vue {
     appSettings.theme = vuetify.framework.theme.dark ? "dark" : "light";
     this.$dataService.saveAppSettings(appSettings);
   }
+
+  async resetWidgetTemplates() {
+    await this.$dataService.resetWidgetTemplates();
+    this.$ambientService.notify("The collection has been reset.");
+  }
 }
 </script>
 
 <style>
+
 footer a {
   text-decoration: none;
   color: #696969;
@@ -148,5 +169,13 @@ footer a {
   left: 50%;
   border: 1px solid orangered;
   border-radius: 100%;
+}
+
+.markdown-output {
+  height: 30vh;
+  border: 1px solid silver;
+  border-radius: 5px;
+  padding: 5px 15px;
+  overflow: auto;
 }
 </style>

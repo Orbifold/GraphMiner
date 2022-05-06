@@ -66,6 +66,7 @@
         <!--        <div style="background-color: #18c426; flex-grow: 1">-->
 
         <div v-if="item.obj.error !== null">{{ item.obj.error }}</div>
+        <div v-else-if="item.obj.renderer==='markdown'" v-html="item.obj.data"></div>
         <ChartWidget v-else :data="item.obj.data" :options="item.obj.options"></ChartWidget>
 
 
@@ -151,7 +152,6 @@ export default class DashboardView extends VueBase {
 
     const result = interpreter.execute(this.widgets);
     if (result && result.length > 0) {
-
       this.layout = this.widgets.map((w, j) => {
         return {
           x: w.layout.x,
@@ -267,11 +267,11 @@ export default class DashboardView extends VueBase {
 
 <style>
 .vue-grid-layout {
-  background: #fff;
+  background: transparent;
 }
 
 .vue-grid-item:not(.vue-grid-placeholder) {
-  background: #fff;
+  background: transparent;
   border: 1px solid silver;
   border-radius: 5px;
   padding: 5px;
@@ -324,5 +324,9 @@ export default class DashboardView extends VueBase {
   background-origin: content-box;
   box-sizing: border-box;
   cursor: pointer;
+}
+
+.apexcharts-title-text {
+  fill: #37A626;
 }
 </style>
