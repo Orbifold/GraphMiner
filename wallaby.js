@@ -6,14 +6,14 @@
 // https://wallabyjs.com
 // ===================================================================
 module.exports = function (wallaby) {
-	return {
-		tests: [
-			{ pattern: "packages/entities/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/graphs/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/store/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/utils/__tests__/*.test.js", ignore: true },
-			{ pattern: "packages/projects/__tests__/*.test.js", ignore: false },
-			{ pattern: "packages/language/__tests__/*.test.js", ignore: true },
-		],
-	};
+    return {
+        tests: [
+            {pattern: "packages/entities/__tests__/*.test.js", ignore: true},
+            {pattern: "packages/graphs/__tests__/*.test.js", ignore: false},
+            {pattern: "packages/store/__tests__/*.test.js", ignore: true},
+            {pattern: "packages/utils/__tests__/*.test.js", ignore: true},
+            {pattern: "packages/projects/__tests__/*.test.js", ignore: true},
+            {pattern: "packages/language/__tests__/*.test.js", ignore: true},
+        ],
+    };
 };

@@ -1,15 +1,22 @@
 const INodeBase = require("./iNodeBase");
-const TripleNode = require("./tripleNode");
-const TripleEdge = require("./tripleEdge");
+
 const Graph = require("./graph");
-const RandomGraph = require("./randomGraph");
-const NamedGraph = require("./namedGraph");
+const RandomGraph = require("./graphData/randomGraph");
+const NamedGraph = require("./graphData/namedGraph");
+const {PseudoCypherEdge, PseudoCypherNode, PseudoCypher, PseudoCypherTriple} = require("./formats/pseudoCypher");
+const JsonGraph = require("./formats/jsonGraph");
+const ArrowGraph = require("./formats/arrowGraph");
+
 
 module.exports = {
-	INodeBase,
-	TripleNode,
-	TripleEdge,
-	Graph,
-	RandomGraph,
-	NamedGraph,
+    INodeBase,
+    PseudoCypherEdge,
+    PseudoCypherNode,
+    PseudoCypher,
+    PseudoCypherTriple,
+    Graph,
+    RandomGraph,
+    NamedGraph,
+    JsonGraph,
+    ArrowGraph
 };
