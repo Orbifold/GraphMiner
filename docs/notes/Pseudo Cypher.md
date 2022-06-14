@@ -40,3 +40,40 @@ g.addNode("(c:Car{id:1442, speed:120})")
 
 > Note the difference between `addNode("a")` and `addNode("(a)"). Without the parentheses "a" becomes the id of the new node while "(a)" is interpreted as pseudo-cypher and "a" becomes the name of the new node.
 
+If you want to specify extra node data and the id of the node in particular:
+
+```js
+g = new Graph();
+g.addNode("(Ian:Person{id:1})-[knows:Friend]->(Anna:Person{id:2})")
+```
+
+which is equivalent to:
+
+```js
+g = new Graph();
+g.addNode({
+    id: 1,
+    name: 'Ian',
+    typeName: "Person"
+})
+g.addNode({
+    id: 2,
+    name: 'Anna',
+    typeName: "Person"
+})
+g.addEdge("1", "2", {name: 'knows', typeName: 'Friend'})
+```
+
+and you can see that it's clearly much easier to use pseudo-cypher than the more elaborate API.
+
+A whole graph can be defined by means of multiple lines, for instance:
+
+```js
+g = Graph.fromPseudoCypher(
+    `
+    (a)-->(b)
+    (a)-[has]->(c)
+    (d:T{u: 12})
+    `
+)
+```

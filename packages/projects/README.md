@@ -1,11 +1,4 @@
-# `@graphminer/projects`
+# Graphminer Projects
 
-> TODO: description
+API managing the Graphminer elements as well as the Python context used by Pyodide to manage data.
 
-## Usage
-
-```
-const projects = require('@graphminer/projects');
-
-// TODO: DEMONSTRATE API
-```

@@ -17,7 +17,7 @@ class WidgetManager {
 
     /**
      * Returns the name and id of all templates.
-     * @returns {Promise<{name,id,description}>}
+     * @returns {Promise<[{name,id,description}]>}
      */
     async getWidgetTemplates() {
         const found = await this.storage.find({}, WidgetCollectionName);
@@ -34,6 +34,11 @@ class WidgetManager {
         return WidgetTemplate.fromJSON(found);
     }
 
+    async widgetTemplateIdExists(id) {
+        const found = await this.getWidgetTemplateById(id)
+        return Utils.isDefined(found)
+    }
+
     async upsertWidgetTemplate(widgetTemplate) {
         if (Utils.isEmpty(widgetTemplate)) {
             throw new Error(Strings.IsNil("widget", "WidgetManager.upsertWidget"));
@@ -41,7 +46,8 @@ class WidgetManager {
         if (!_.isPlainObject(widgetTemplate)) {
             widgetTemplate = JSON.parse(JSON.stringify(widgetTemplate));
         }
-        return this.storage.upsert(widgetTemplate, WidgetCollectionName, {id: widgetTemplate.id});
+        await this.storage.upsert(widgetTemplate, WidgetCollectionName, {id: widgetTemplate.id});
+        return widgetTemplate
     }
 
     async removeAllWidgetTemplate() {
@@ -64,8 +70,9 @@ class WidgetManager {
             found.id = Utils.id()
             found.name = this.duplicateName(found.name)
             await this.upsertWidgetTemplate(found);
+            return found
         }
-
+        return null;
     }
 
     /**

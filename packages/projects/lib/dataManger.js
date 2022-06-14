@@ -12,7 +12,8 @@ const Widget = require("./widget");
 /*
  * Manages all data of GraphMiner client by extending the EntitySpace with
  * various project-related data.
- *
+ * In the Graphminer web-app this manager is wrapped in the DataService to combine with
+ * redux-store actions. This manager is used by the Pyodide context to access and change data.
  *
  * */
 class DataManger {
@@ -27,10 +28,22 @@ class DataManger {
      * @type {EntitySpace}
      */
     entitySpace;
-
+    /**
+     * Manages the widget templates.
+     * @type {WidgetManager}
+     */
     widgetManager;
+    /**
+     * Manages the settings.
+     * @type {SettingsManager}
+     */
     settingsManager;
 
+    //region Instantiation
+    /**
+     * Returns an instance of the {@link DataManger} suitable for the browser.
+     * @returns {Promise<DataManger>}
+     */
     static async browser() {
         const space = await EntitySpace.browser();
         const storage = space.store.storage;
@@ -41,14 +54,29 @@ class DataManger {
         return new DataManger(pm, space, wm, sm);
     }
 
+    /**
+     * Returns an in-memory instance of the {@link DataManger}.
+     * @returns {Promise<DataManger>}
+     */
     static async inMemory() {
-        const space = await EntitySpace.inMemory();
-        const storage = space.store.storage;
+        const entitySpace = await EntitySpace.inMemory();
+        const storage = entitySpace.store.storage;
         // matters to use the same storage, seems LokiJS does not like multiple instances
-        const pm = new ProjectManager(storage);
-        return new DataManger(pm, space);
+        const projectManager = new ProjectManager(storage);
+        const widgetManager = new WidgetManager(storage);
+        const settingsManager = new SettingsManager(storage);
+        return new DataManger(projectManager, entitySpace, widgetManager, settingsManager);
     }
 
+    /**
+     * Instantiates a new DataManager with the given sub-manager.
+     * Each manager can have an independent underlying storage or see the {@link inMemory} method
+     * for how to use a shared storage.
+     * @param projectManager {ProjectManager} The project manager.
+     * @param entitySpace {EntitySpace} The entity space.
+     * @param widgetManager {WidgetManager} The widget manager.
+     * @param settingsManager {SettingsManager} The settings manager.
+     */
     constructor(projectManager, entitySpace, widgetManager, settingsManager) {
         this.projectManager = projectManager;
         this.entitySpace = entitySpace;
@@ -56,6 +84,9 @@ class DataManger {
         this.settingsManager = settingsManager;
     }
 
+    //endregion
+
+    //region Project Management
     async createProject(...projectSpecs) {
         await this.widgetManager.ensureDummyWidget();
 
@@ -72,28 +103,12 @@ class DataManger {
         return project;
     }
 
-    async removeProject(projectId) {
-        const project = await this.projectManager.getProjectById(projectId);
-        if (project) {
-            await this.entitySpace.removeDatabase(project.databaseName);
-            await this.projectManager.removeProject(projectId);
+    async getProjectById(projectId) {
+        const found = this.projectManager.getProjectById(projectId);
+        if (Utils.isEmpty(found)) {
+            throw new Error(`Project '${projectId}' does not exist.`);
         }
-    }
-
-    async removeAllWidgetTemplate() {
-        await this.widgetManager.removeAllWidgetTemplate()
-    }
-
-    async duplicateWidgetTemplate(templateId) {
-        await this.widgetManager.duplicateWidgetTemplate(templateId)
-    }
-
-    async removeWidgetTemplate(templateId) {
-        await this.widgetManager.removeWidgetTemplate(templateId)
-    }
-
-    async addBlankWidgetTemplate() {
-        return await this.widgetManager.addBlankWidgetTemplate();
+        return found;
     }
 
     async getAllProjects() {
@@ -104,18 +119,45 @@ class DataManger {
         return this.projectManager.getProjectNames();
     }
 
-    async getSpaceAsGraphJson(projectId) {
-        const exists = await this.projectManager.projectIdExists(projectId);
-        if (!exists) {
-            return null;
+    async removeProject(projectId) {
+        const project = await this.projectManager.getProjectById(projectId);
+        if (project) {
+            await this.entitySpace.removeDatabase(project.databaseName);
+            await this.projectManager.removeProject(projectId);
         }
-        const project = await this.getProjectById(projectId);
-        await this.entitySpace.setDatabase(project.databaseName);
-        return await this.entitySpace.exportGraphJson();
     }
 
     async projectNameExists(projectName) {
         return await this.projectManager.projectNameExists(projectName);
+    }
+
+    /**
+     * Returns true if the given id is a project id.
+     * @param id {string} An id.
+     * @returns {Promise<boolean>}
+     */
+    async projectIdExists(id) {
+        return await this.projectManager.projectIdExists(id);
+    }
+
+    async upsertProject(project) {
+        await this.projectManager.upsertProject(project);
+    }
+
+
+    //endregion
+
+    //region Widget Templates
+    /**
+     * Returns the name and id of all templates.
+     * @returns {Promise<[{name,id,description}]>}
+     */
+    async getWidgetTemplates() {
+        return await this.widgetManager.getWidgetTemplates();
+    }
+
+    async removeAllWidgetTemplate() {
+        await this.widgetManager.removeAllWidgetTemplate()
     }
 
     async upsertWidgetTemplate(widget) {
@@ -134,14 +176,51 @@ class DataManger {
         return this.widgetManager.getWidgetTemplateById(id);
     }
 
-    async getProjectById(projectId) {
-        const found = this.projectManager.getProjectById(projectId);
-        if (Utils.isEmpty(found)) {
-            throw new Error(`Project '${projectId}' does not exist.`);
-        }
-        return found;
+    async widgetTemplateIdExists(id) {
+        return this.widgetManager.widgetTemplateIdExists(id);
     }
 
+
+    async duplicateWidgetTemplate(templateId) {
+        return await this.widgetManager.duplicateWidgetTemplate(templateId)
+    }
+
+    async removeWidgetTemplate(templateId) {
+        await this.widgetManager.removeWidgetTemplate(templateId)
+    }
+
+    async addBlankWidgetTemplate() {
+        return await this.widgetManager.addBlankWidgetTemplate();
+    }
+
+    //endregion
+
+    //region Entity Space
+    async getSpaceAsGraphJson(projectId) {
+        const exists = await this.projectManager.projectIdExists(projectId);
+        if (!exists) {
+            return null;
+        }
+        const project = await this.getProjectById(projectId);
+        await this.entitySpace.setDatabase(project.databaseName);
+        return await this.entitySpace.exportGraphJson();
+    }
+
+    /**
+     *
+     * @param projectId
+     * @returns {Promise<Graph>}
+     */
+    async getGraph(projectId) {
+        const project = await this.getProjectById(projectId);
+        await this.entitySpace.setDatabase(project.databaseName);
+        return await this.entitySpace.exportGraph();
+    }
+
+
+    //endregion
+
+    //region Dashboard
     async getAllDashboards(projectId) {
         const project = await this.getProjectById(projectId);
         return project.dashboards; //strongly typed
@@ -156,39 +235,18 @@ class DataManger {
             db.addWidget(widget);
         }
         project.dashboards.push(db);
-        await this.save(project);
+        await this.upsertProject(project);
         return db;
     }
 
-    async save(project) {
-        if (project) {
-            await this.projectManager.upsertProject(project);
-        }
-    }
+    //endregion
 
-    async upsertProject(project) {
-        await this.projectManager.upsertProject(project);
-    }
-
+    //region App Settings
     /**
-     *
-     * @param projectId
-     * @returns {Promise<Graph>}
+     * Saves the given app settings.
+     * @param appSettings {AppSettings} The app settings to save.
+     * @returns {Promise<*>}
      */
-    async getGraph(projectId) {
-        const project = await this.getProjectById(projectId);
-        await this.entitySpace.setDatabase(project.databaseName);
-        return await this.entitySpace.exportGraph();
-    }
-
-    /**
-     * Returns the name and id of all templates.
-     * @returns {Promise<{name,id,description}>}
-     */
-    async getWidgetTemplates() {
-        return await this.widgetManager.getWidgetTemplates();
-    }
-
     async saveAppSettings(appSettings) {
         return await this.settingsManager.saveAppSettings(appSettings);
     }
@@ -196,6 +254,8 @@ class DataManger {
     async getAppSettings() {
         return await this.settingsManager.getAppSettings();
     }
+
+    //endregion
 }
 
 module.exports = DataManger;

@@ -1,5 +1,6 @@
 const {Utils, Strings} = require("@graphminer/utils");
 const WidgetTemplate = require("./widgetTemplate");
+const _ = require("lodash")
 const DefaultLayout = {
     x: 0,
     y: 0,

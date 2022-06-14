@@ -203,6 +203,7 @@ class Graph {
      * `)
      * Graph.fromArrows(["a->b->c","c->b"])
      * @param input {string|string[]}
+     * @see ArrowGraph
      */
     static fromArrows(input) {
         const jsonGraph = ArrowGraph.parse(input)

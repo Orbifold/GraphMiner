@@ -14,7 +14,7 @@
     "node": ">14.18.2"
   },
   "scripts": {
-    "build": "vue-cli-service build",
+    "build": "node --max-old-space-size=7168 ./node_modules/.bin/vue-cli-service build --mode production",
     "test:unit": "vue-cli-service test:unit",
     "start": "vue-cli-service serve --port 7000"
   },

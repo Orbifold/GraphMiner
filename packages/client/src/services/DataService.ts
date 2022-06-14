@@ -23,6 +23,15 @@ export default class DataService {
         }
         this.dataManager = await DataManager.browser();
         this.$store = $store;
+        await this.loadAppSettings();
+        return this;
+    }
+
+    /**
+     * Loads the saved app settings or assigns the default.
+     * @returns {Promise<void>}
+     */
+    async loadAppSettings() {
         let settings = await this.dataManager.getAppSettings();
         if (Utils.isEmpty(settings)) {
             settings = new AppSettings();
@@ -31,7 +40,6 @@ export default class DataService {
         }
         this.$store.commit("ambient/setAppSettings", settings);
         vuetify.framework.theme.dark = settings.theme === "dark";
-        return this;
     }
 
     async resetWidgetTemplates() {
@@ -134,7 +142,7 @@ export default class DataService {
             const widget = Widget.fromWidgetTemplate(widgetTemplate, dashboardId, projectId);
             const project = await this.getActiveProject();
             project.addWidget(widget, dashboardId);
-            await this.dataManager.save(project);
+            await this.dataManager.upsertProject(project);
             await this.setActiveProject(projectId);
         } else {
             throw new Error(`Could not find widget template with id '${widgetTemplateId}'.`);
